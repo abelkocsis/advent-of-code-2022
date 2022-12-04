@@ -1,3 +1,5 @@
+package day3;
+
 import java.io.IOException;
 import java.util.Arrays;
 
