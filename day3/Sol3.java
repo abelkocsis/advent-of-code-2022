@@ -16,9 +16,9 @@ public class Sol3 {
             while ((line = br.readLine()) != null) {
                 allLines[i++] = line;
                 // part 1
-                int partLen = line.length() / 2;
-                String secondPart = line.substring(partLen);
-                String common = Arrays.asList(line.substring(0, partLen).split("")).stream()
+                final int partLen = line.length() / 2;
+                final String secondPart = line.substring(partLen);
+                final String common = Arrays.asList(line.substring(0, partLen).split("")).stream()
                         .filter(chr -> secondPart.contains(chr)).findAny().get();
                 overallPriority += getPriority(common);
             }
@@ -32,7 +32,7 @@ public class Sol3 {
             final int firstInGrp = j;
             final int secondInGrp = j + 1;
             final int thirdInGrp = j + 2;
-            String common = Arrays.asList(allLines[firstInGrp].split("")).stream()
+            final String common = Arrays.asList(allLines[firstInGrp].split("")).stream()
                     .filter(chrS -> allLines[secondInGrp].contains(chrS))
                     .filter(chrS -> allLines[thirdInGrp].contains(chrS))
                     .findAny().get();
@@ -43,7 +43,7 @@ public class Sol3 {
         System.out.println("Solution for part 2: " + overallPriorityP2);
     }
 
-    private static int getPriority(String commonCharacter) {
+    private static int getPriority(final String commonCharacter) {
         char chr = commonCharacter.charAt(0);
         if (chr < 'a') {
             return (int) chr - (int) 'A' + 27;

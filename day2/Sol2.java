@@ -7,11 +7,11 @@ public class Sol2 {
     enum Rps {
         ROCK(1), PAPER(2), SCISSORS(3);
 
-        private static Rps[] RpsArray = new Rps[] { SCISSORS, ROCK, PAPER, SCISSORS, ROCK };
+        private static Rps[] rpsArray = { SCISSORS, ROCK, PAPER, SCISSORS, ROCK };
 
         private final int value;
 
-        private Rps(int value) {
+        private Rps(final int value) {
             this.value = value;
         }
 
@@ -20,16 +20,16 @@ public class Sol2 {
         }
 
         public Rps beats() {
-            return RpsArray[this.value - 1];
+            return rpsArray[this.value - 1];
         }
 
         public Rps losesAgainst() {
-            return RpsArray[this.value + 1];
+            return rpsArray[this.value + 1];
         }
 
     }
 
-    public static Rps parse(char chr) {
+    public static Rps parse(final char chr) {
         switch (chr) {
             case 'A':
             case 'X':
@@ -45,7 +45,7 @@ public class Sol2 {
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         String line;
         Rps opponent;
         Rps own;
@@ -54,7 +54,7 @@ public class Sol2 {
 
         try (BufferedReader br = new BufferedReader(new FileReader("in2.txt"))) {
             while ((line = br.readLine()) != null) {
-                String[] splittedLine = line.split(" ");
+                final String[] splittedLine = line.split(" ");
                 opponent = parse(splittedLine[0].charAt(0));
                 own = parse(splittedLine[1].charAt(0));
                 score1 += getScore(own, opponent);
@@ -70,7 +70,7 @@ public class Sol2 {
 
     }
 
-    private static int getScore(Rps own, Rps opponent) {
+    private static int getScore(final Rps own, final Rps opponent) {
         final int baseScore = own.getValue();
         int matchScore;
         if (own.beats() == opponent) {
@@ -83,7 +83,7 @@ public class Sol2 {
         return baseScore + matchScore;
     }
 
-    private static Rps shouldPlay(Rps opponent, char command) {
+    private static Rps shouldPlay(final Rps opponent, final char command) {
         switch (command) {
             case 'X':
                 return opponent.beats();
