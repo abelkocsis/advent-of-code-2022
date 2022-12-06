@@ -1,6 +1,8 @@
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -9,83 +11,138 @@ import java.util.stream.IntStream;
 
 public class Sol5 {
 
-    private static class Command {
-        int number;
-        int from;
-        int to;
+  /** List of commands */
+  private static final List<Command> COMMANDS = new ArrayList<>(100);
 
-        Command(String commandStr) {
-            String[] splittedCommand = commandStr.split(" ");
-            number = Integer.parseInt(splittedCommand[1]);
-            from = Integer.parseInt(splittedCommand[3]);
-            to = Integer.parseInt(splittedCommand[5]);
-        }
+  /**
+   * Commands, parsed from the rearranging procedure
+   */
+  private static class Command {
+
+    /** Number of crates to rearrange */
+    /* default */ final transient int number;
+
+    /** From stack id */
+    /* default */ final transient int from;
+
+    /** To stack id */
+    /* default */ final transient int to;
+
+    /**
+     * Command constructor, parses commandStr
+     *
+     * @param commandStr As specified in the task description
+     */
+    /* default */ Command(final String commandStr) {
+      final String[] splittedCommand = commandStr.split(" ");
+      this.number = Integer.parseInt(splittedCommand[1]);
+      this.from = Integer.parseInt(splittedCommand[3]);
+      this.to = Integer.parseInt(splittedCommand[5]);
+    }
+  }
+
+  public static void main(final String[] str) {
+    String line;
+
+    boolean stackParsing = true; // is stack parsing being in progress?
+
+    // instead of deep copying the original stack, save input to two lists and do the
+    // rearranging inside them
+    final List<LinkedList<String>> stacksP1 = new ArrayList<>();
+    final List<LinkedList<String>> stacksP2 = new ArrayList<>();
+
+    // initialise lists
+    for (int i = 0; i < 10; i++) {
+      stacksP1.add(new LinkedList<String>());
+      stacksP2.add(new LinkedList<String>());
     }
 
-    private static final List<Command> commands = new ArrayList<>(100);
+    // read inputs
+    try (BufferedReader buffR =
+        Files.newBufferedReader(Paths.get("in5.txt"), StandardCharsets.UTF_8)) {
+      while ((line = buffR.readLine()) != null) {
 
-    public static void main(String[] str) {
-        String line;
+        if (stackParsing) {
+          if (line.charAt(1) == '1') {
+            stackParsing = false;
+            continue;
+          }
 
-        boolean areStacksBeingParsed = true;
-
-        final List<LinkedList<String>> stacksP1 = new ArrayList<>();
-        final List<LinkedList<String>> stacksP2 = new ArrayList<>();
-
-        for (int i = 0; i < 10; i++) {
-            stacksP1.add(new LinkedList<String>());
-            stacksP2.add(new LinkedList<String>());
-        }
-
-        try (BufferedReader br = new BufferedReader(new FileReader("in5.txt"))) {
-            while ((line = br.readLine()) != null) {
-
-                if (areStacksBeingParsed) {
-                    if (line.charAt(1) == '1') {
-                        areStacksBeingParsed = false;
-                        continue;
-                    }
-
-                    for (int i = 1; i < line.length(); i += 4) {
-                        if (line.charAt(i) != ' ') {
-                            stacksP1.get((i + 3) / 4).addFirst(line.substring(i, i + 1));
-                            stacksP2.get((i + 3) / 4).addFirst(line.substring(i, i + 1));
-                        }
-                    }
-                } else {
-                    if (!line.isEmpty()) {
-                        commands.add(new Command(line));
-                    }
-                }
+          for (int i = 1; i < line.length(); i += 4) {
+            if (line.charAt(i) != ' ') {
+              stacksP1.get((i + 3) / 4).addFirst(line.substring(i, i + 1));
+              stacksP2.get((i + 3) / 4).addFirst(line.substring(i, i + 1));
             }
-        } catch (IOException e) {
-            System.out.println("IOException in try block =>" + e.getMessage());
+          }
+        } else if (!line.isEmpty()) {
+          COMMANDS.add(new Command(line));
         }
-
-        runCommandsP1(stacksP1);
-        System.out.println("Solution for Part 1: " + stacksP1.stream().filter(stack -> !stack.isEmpty())
-                .map(stack -> stack.getLast()).collect(Collectors.toList()).toString().replaceAll("[,\\[\\]\\ ]", ""));
-
-        runCommandsP2(stacksP2);
-        System.out.println("Solution for Part 2: " + stacksP2.stream().filter(stack -> !stack.isEmpty())
-                .map(stack -> stack.getLast()).collect(Collectors.toList()).toString().replaceAll("[,\\[\\]\\ ]", ""));
+      }
+    } catch (final IOException e) {
+      System.out.println("IOException in try block =>" + e.getMessage());
     }
 
-    private static void runCommandsP1(final List<LinkedList<String>> stacks) {
-        commands.forEach(command -> {
-            IntStream.range(0, command.number).forEach(i -> {
-                stacks.get(command.to).add(stacks.get(command.from).removeLast());
-            });
-        });
-    }
+    runCommandsP1(stacksP1);
+    System.out.println("Solution for Part 1: " + stacksP1.stream()
+        // filter empty stacks, we assume only stack 0 is empty, which we didn't use
+        .filter(stack -> !stack.isEmpty())
+        // get element from the top (last element)
+        .map(stack -> stack.getLast())
+        // parse it as a string
+        .collect(Collectors.toList()).toString()
+        // delete unnecessary characters
+        .replaceAll("[,\\[\\]\\ ]", ""));
 
-    private static void runCommandsP2(final List<LinkedList<String>> stacks) {
-        commands.forEach(command -> {
-            final int fromSize = stacks.get(command.from).size();
-            final int fromRemoveStart = stacks.get(command.from).size() - command.number;
-            stacks.get(command.to).addAll(stacks.get(command.from).subList(fromRemoveStart, fromSize));
+    runCommandsP2(stacksP2);
+    System.out.println("Solution for Part 2: " + stacksP2.stream()
+        // filter empty stacks, we assume only stack 0 is empty, which we didn't use
+        .filter(stack -> !stack.isEmpty())
+        // get element from the top (last element)
+        .map(stack -> stack.getLast())
+        // parse it as a string
+        .collect(Collectors.toList()).toString()
+        // delete unnecessary characters
+        .replaceAll("[,\\[\\]\\ ]", ""));
+  }
 
-            IntStream.range(0, command.number).forEach(i -> stacks.get(command.from).removeLast());
-        });
-    }
+  /**
+   * Runs commands according to Part 1. <br>
+   * The result is saved into the original list
+   *
+   * @param stacks
+   */
+  private static void runCommandsP1(final List<LinkedList<String>> stacks) {
+    // for each command
+    COMMANDS.forEach(command -> {
+      // for command.number times
+      IntStream.range(0, command.number).forEach(
+          // remove to crate from from stack, add it to to stack
+          i -> stacks.get(command.to).add(stacks.get(command.from).removeLast()));
+    });
+  }
+
+  /**
+   * Runs commands according to Part 2 <br>
+   * The result is saved into the original list
+   *
+   * @param stacks
+   */
+  private static void runCommandsP2(final List<LinkedList<String>> stacks) {
+    COMMANDS.forEach(command -> {
+
+      // size of from stack
+      final int fromSize = stacks.get(command.from).size();
+
+      // first crate id we need to move. Assumed it is greater or equal to zero.
+      final int fromRemoveStart = stacks.get(command.from).size() - command.number;
+
+      // add moved crates to to stack
+      stacks.get(command.to)
+          .addAll(stacks.get(command.from).subList(fromRemoveStart, fromSize));
+
+      // removed moved crates from from stack
+      IntStream.range(0, command.number)
+          .forEach(i -> stacks.get(command.from).removeLast());
+    });
+  }
 }

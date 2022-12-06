@@ -50,11 +50,18 @@ public class Sol2 {
         Files.newBufferedReader(Paths.get("in2.txt"), StandardCharsets.UTF_8)) {
       while ((line = buffR.readLine()) != null) {
         final String[] splittedLine = line.split(" ");
+
+        // parse characters
         opponent = parse(splittedLine[0].charAt(0));
         own = parse(splittedLine[1].charAt(0));
+
+        // get score for part1
         score1 += getScore(own, opponent);
 
+        // decide what to play for part 2
         own = toPlay(opponent, splittedLine[1].charAt(0));
+
+        // get score for part2
         score2 += getScore(own, opponent);
       }
     } catch (
