@@ -10,7 +10,7 @@ import java.util.stream.IntStream;
 
 public class Sol8 {
 
-  /** List to store the current directory structure */
+  /** List to all tree heights */
   private final static List<List<Integer>> HEIGHTS = new ArrayList<>();
 
   public static void main(final String[] str) {
