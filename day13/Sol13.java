@@ -10,8 +10,8 @@ import java.util.stream.IntStream;
 public class Sol13 {
 
   static class Element {
-    int integerValue;
-    List<Element> listValue = new ArrayList<>();
+    int intVal;
+    List<Element> listVal = new ArrayList<>();
 
     boolean isInteger;
 
@@ -20,14 +20,14 @@ public class Sol13 {
     }
 
     Element(final int integerValue) {
-      this.integerValue = integerValue;
+      this.intVal = integerValue;
       this.isInteger = true;
     }
 
     Element(final String input) {
 
       try {
-        this.integerValue = Integer.parseInt(input);
+        this.intVal = Integer.parseInt(input);
         this.isInteger = true;
         return;
       } catch (final NumberFormatException e) {
@@ -51,7 +51,7 @@ public class Sol13 {
           continue;
         } else if (convertedString[i] == ',') {
           if (!sb.toString().isBlank()) {
-            this.listValue.add(new Element(sb.toString()));
+            this.listVal.add(new Element(sb.toString()));
           }
           sb = new StringBuffer();
         } else {
@@ -60,24 +60,24 @@ public class Sol13 {
 
       }
       if (!sb.toString().isBlank()) {
-        this.listValue.add(new Element(sb.toString()));
+        this.listVal.add(new Element(sb.toString()));
       }
     }
 
     @Override
     public String toString() {
       if (this.isInteger) {
-        return Integer.toString(this.integerValue);
+        return Integer.toString(this.intVal);
       } else {
-        return this.listValue.toString();
+        return this.listVal.toString();
       }
     }
 
     RES isSmallerThan(final Element b) {
       if (this.isInteger && b.isInteger) {
-        if (this.integerValue < b.integerValue) {
+        if (this.intVal < b.intVal) {
           return RES.GOOD;
-        } else if (this.integerValue == b.integerValue) {
+        } else if (this.intVal == b.intVal) {
           return RES.CANT_DECIDE;
         } else {
           return RES.BAD;
@@ -86,15 +86,14 @@ public class Sol13 {
         int i = 0;
         int j = 0;
         while (true) {
-          if (i == this.listValue.size() && j < b.listValue.size()) {
+          if (i == this.listVal.size() && j < b.listVal.size()) {
             return RES.GOOD;
-          } else if (i < this.listValue.size() && j == b.listValue.size()) {
+          } else if (i < this.listVal.size() && j == b.listVal.size()) {
             return RES.BAD;
-          } else if (i == this.listValue.size() && j == b.listValue.size()) {
+          } else if (i == this.listVal.size() && j == b.listVal.size()) {
             return RES.CANT_DECIDE;
           } else {
-            final RES partRes =
-                this.listValue.get(i).isSmallerThan(b.listValue.get(j));
+            final RES partRes = this.listVal.get(i).isSmallerThan(b.listVal.get(j));
 
             if (partRes == RES.CANT_DECIDE) {
               i++;
@@ -115,7 +114,7 @@ public class Sol13 {
 
     Element toListElement() {
       final Element result = new Element();
-      result.listValue.add(this);
+      result.listVal.add(this);
       return result;
     }
   }
