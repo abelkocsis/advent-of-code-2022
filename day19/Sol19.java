@@ -11,11 +11,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class Sol19 {
 
-  static int maxtime = 24;
+  static int maxtime = 32;
 
   static AtomicInteger threadCount = new AtomicInteger(1);
 
-  static int maxThreads = 30;
+  static int maxThreads = 100;
 
 
   static public final List<Integer> maxes = Collections.synchronizedList(
@@ -134,6 +134,7 @@ public class Sol19 {
       final int res = status.getStatusIn(1).geodes;
       if (res > maxes.get(time - 1)) {
         maxes.set(time - 1, res);
+        maxes.set(time, res);
       }
       return res;
     }
@@ -154,7 +155,7 @@ public class Sol19 {
 
       final Status nextStatus = status.getStatusIn(1);
       nextStatus.geodeRobots++;
-      final int result = simulate(print, time + 1, nextStatus);
+      final int result = concurrentSimulate(print, time + 1, nextStatus);
       if (result > maxes.get(time)) {
         maxes.set(time, result);
       }
@@ -194,25 +195,36 @@ public class Sol19 {
       final MyThread tr = new MyThread(print, time + 1, status.getStatusIn(1));
       threads.add(tr);
 
-      final int trCount = threadCount.incrementAndGet();
-      if (trCount < maxThreads) {
-
-
-        threads.forEach(thread -> thread.start());
-        threads.forEach(thread -> {
-          try {
-            thread.join();
-          } catch (final InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+      if (maxtime - time < 18) {
+        for (final MyThread thread : threads) {
+          final int res = simulate(thread.print, thread.time, thread.status);
+          if (res > max) {
+            max = res;
           }
-        });
-        threadCount.decrementAndGet();
-        max = threads.stream().mapToInt(thread -> thread.result).max().orElse(-1);
+        }
       } else {
-        threadCount.decrementAndGet();
-        max =
-            threads.stream().mapToInt(thread -> thread.runLinear()).max().orElse(-1);
+        final int trCount = threadCount.incrementAndGet();
+        if (trCount < maxThreads) {
+          threads.forEach(thread -> thread.start());
+          threads.forEach(thread -> {
+            try {
+              thread.join();
+            } catch (final InterruptedException e) {
+              // TODO Auto-generated catch block
+              e.printStackTrace();
+            }
+          });
+          threadCount.decrementAndGet();
+          max = threads.stream().mapToInt(thread -> thread.result).max().orElse(-1);
+        } else {
+          threadCount.decrementAndGet();
+          for (final MyThread thread : threads) {
+            final int res = thread.runLinear();
+            if (res > max) {
+              max = res;
+            }
+          }
+        }
       }
 
       if (max > maxes.get(time)) {
@@ -235,7 +247,7 @@ public class Sol19 {
         }
         final Print p = new Print(line);
         final Status s = new Status();
-        final int sim = simulate(p, 0, s);
+        final int sim = concurrentSimulate(p, 0, s);
         System.out.println(p.index + ": " + sim);
         count += sim * p.index;
       }
@@ -257,10 +269,8 @@ public class Sol19 {
   public static int simulate(final Print print, final int time,
       final Status status) {
     if (time == maxtime - 1) {
-      // System.out.println(java.lang.Thread.activeCount());
       final int res = status.getStatusIn(1).geodes;
       if (res > maxes.get(time - 1)) {
-
         maxes.set(time - 1, res);
       }
       return res;
@@ -272,6 +282,7 @@ public class Sol19 {
     if (maxObsidianFromHere <= maxes.get(time)) {
       return -1;
     }
+
 
     if (status.ores >= print.oreForGeoRobot
         && status.obsidians >= print.obsForGeoRobot) {
@@ -298,16 +309,7 @@ public class Sol19 {
         nextStatus.ores -= print.oreForObsRobot;
         nextStatus.clays -= print.clayForObsRobot;
         nextStatus.obsidianRobots++;
-
-
-        int result;
-        final int trCount = threadCount.get();
-        if (trCount < maxThreads) {
-          result = concurrentSimulate(print, time + 1, nextStatus);
-        } else {
-          result = simulate(print, time + 1, nextStatus);
-        }
-
+        final int result = simulate(print, time + 1, nextStatus);
         if (result > max) {
           max = result;
         }
@@ -317,14 +319,7 @@ public class Sol19 {
         nextStatus = status.getStatusIn(1);
         nextStatus.ores -= print.oreForClayRobot;
         nextStatus.clayRobots++;
-        final int trCount = threadCount.get();
-        int result;
-        if (trCount < maxThreads) {
-          result = concurrentSimulate(print, time + 1, nextStatus);
-        } else {
-          result = simulate(print, time + 1, nextStatus);
-        }
-
+        final int result = simulate(print, time + 1, nextStatus);
         if (result > max) {
           max = result;
         }
@@ -334,29 +329,16 @@ public class Sol19 {
         nextStatus = status.getStatusIn(1);
         nextStatus.ores -= print.oreForOreRobot;
         nextStatus.oreRobots++;
-        int result;
-        final int trCount = threadCount.get();
-        if (trCount < maxThreads) {
-          result = concurrentSimulate(print, time + 1, nextStatus);
-        } else {
-          result = simulate(print, time + 1, nextStatus);
-        }
-
+        final int result = simulate(print, time + 1, nextStatus);
         if (result > max) {
           max = result;
         }
       }
-      int result;
-      final int trCount = threadCount.get();
-      if (trCount < maxThreads) {
-        result = concurrentSimulate(print, time + 1, status.getStatusIn(1));
-      } else {
-        result = simulate(print, time + 1, status.getStatusIn(1));
-      }
-
+      final int result = simulate(print, time + 1, status.getStatusIn(1));
       if (result > max) {
         max = result;
       }
+
       if (max > maxes.get(time)) {
         maxes.set(time, max);
       }
@@ -364,5 +346,4 @@ public class Sol19 {
 
     }
   }
-
 }
