@@ -11,118 +11,191 @@ import java.util.function.BiFunction;
 
 public class Sol21 {
 
-  static Map<String, Monkey> monkeys = new HashMap<>();
-  static Map<String, List<String>> dependentOn = new HashMap<>();
+  /** Monkey name - monkey object map to store all monkeys */
+  private static final Map<String, Monkey> MONKEYS = new HashMap<>();
 
-  static class Monkey {
-    boolean hasResult = false;
-    String name;
-    Long result = null;
-    String in1 = null;
-    String in2 = null;
-    BiFunction<Long, Long, Long> function;
-    BiFunction<Long, Long, Long> revFunctionGet1;
-    BiFunction<Long, Long, Long> revFunctionGet2;
+  /**
+   * Map to store dependencies. MonkeyD is in the list belonging to key MonkeyK, if
+   * MonkeyD's result can only be calculated after MonkeyK's result is known. Note
+   * that it does not mean that MonkeyD is only dependent on MonkeyK's value
+   */
+  private static final Map<String, List<String>> DEPENDS_ON = new HashMap<>();
 
-    Monkey(final String name, final String inOperation) {
+  /**
+   * Representation of a monkey
+   */
+  private static final class Monkey {
+
+    /** Whether result is given or has already been calculated */
+    /* default */ transient boolean hasResult = false;
+
+    /** Name of the monkey */
+    /* default */ transient final String name;
+
+    /** Result what is shouted by monkey */
+    /* default */ transient Long result = null;
+
+    /** First argument of calculation, if a calculation is needed */
+    /* default */ transient final String param1Name;
+
+    /** Second argument of calculation, if a calculation is needed */
+    /* default */ transient final String param2Name;
+
+    /** Function to calculate the result */
+    private transient final BiFunction<Long, Long, Long> function;
+
+    /**
+     * Function to get the first parameter of the calculation, given the result and
+     * the second parameter.
+     */
+    private transient final BiFunction<Long, Long, Long> revFunctionGet1;
+
+    /**
+     * Function to get the second parameter of the calculation, given the result and
+     * the first parameter.
+     */
+    private transient final BiFunction<Long, Long, Long> revFunctionGet2;
+
+    /**
+     * Monkey constructor
+     *
+     * @param name
+     * @param inOperation
+     */
+    protected Monkey(final String name, final String inOperation) {
       this.name = name;
       if (inOperation.contains("+")) {
-        this.function = (a, b) -> a + b;
-        this.revFunctionGet1 = (a, b) -> a - b;
-        this.revFunctionGet2 = (a, b) -> a - b;
+        // operation is addition
+        this.function = (param1, param2) -> param1 + param1;
+        this.revFunctionGet1 = (result, param2) -> result - param2;
+        this.revFunctionGet2 = (result, param1) -> result - param1;
         final String[] splittedOp = inOperation.split("[+]");
-        this.in1 = splittedOp[0].strip();
-        this.in2 = splittedOp[1].strip();
+        this.param1Name = splittedOp[0].strip();
+        this.param2Name = splittedOp[1].strip();
       } else if (inOperation.contains("-")) {
-        this.function = (a, b) -> a - b;
-        this.revFunctionGet1 = (a, b) -> a + b;
-        this.revFunctionGet2 = (a, b) -> b - a;
+        // operation is subtraction
+        this.function = (param1, param2) -> param1 - param2;
+        this.revFunctionGet1 = (result, param2) -> result + param2;
+        this.revFunctionGet2 = (result, param1) -> result - param1;
         final String[] splittedOp = inOperation.split("[-]");
-        this.in1 = splittedOp[0].strip();
-        this.in2 = splittedOp[1].strip();
+        this.param1Name = splittedOp[0].strip();
+        this.param2Name = splittedOp[1].strip();
       } else if (inOperation.contains("*")) {
-        this.function = (a, b) -> a * b;
-        this.revFunctionGet1 = (a, b) -> a / b;
-        this.revFunctionGet2 = (a, b) -> a / b;
+        // operation is multiplication
+        this.function = (param1, param2) -> param1 * param2;
+        this.revFunctionGet1 = (result, param2) -> result / param2;
+        this.revFunctionGet2 = (result, param1) -> result / param1;
         final String[] splittedOp = inOperation.split("[*]");
-        this.in1 = splittedOp[0].strip();
-        this.in2 = splittedOp[1].strip();
+        this.param1Name = splittedOp[0].strip();
+        this.param2Name = splittedOp[1].strip();
       } else if (inOperation.contains("/")) {
-        this.function = (a, b) -> a / b;
-        this.revFunctionGet1 = (a, b) -> a * b;
-        this.revFunctionGet2 = (a, b) -> b / a;
+        // operation is division
+        this.function = (param1, param2) -> param1 / param2;
+        this.revFunctionGet1 = (result, param2) -> result * param2;
+        this.revFunctionGet2 = (result, param1) -> result / param1;
         final String[] splittedOp = inOperation.split("[/]");
-        this.in1 = splittedOp[0].strip();
-        this.in2 = splittedOp[1].strip();
+        this.param1Name = splittedOp[0].strip();
+        this.param2Name = splittedOp[1].strip();
       } else {
+        // monkey just shouts a number
         this.result = Long.parseLong(inOperation.strip());
         this.hasResult = true;
+        this.param1Name = null;
+        this.param2Name = null;
+        this.function = null;
+        this.revFunctionGet1 = null;
+        this.revFunctionGet2 = null;
       }
     }
 
-    void tryToCalculate() {
-      // for part 2 only
-      if ("humn".equals(this.name)) {
-        return;
-      }
+    /**
+     * Tries to calculate the result of the operation. If the result is calculated
+     * successfully, calculates all which was dependent on this calculation.
+     */
+    public void tryToCalculate() {
+      if (!this.hasResult) {
+        // if has no result yet, try to calculate it
 
+        final Monkey param1Monkey = MONKEYS.get(this.param1Name);
 
-      if (this.hasResult) {
-        // nothing to do
-      } else {
-        final Monkey in1M = monkeys.get(this.in1);
-        if (in1M == null || !in1M.hasResult) {
-          if (!dependentOn.containsKey(this.in1)) {
-            dependentOn.put(this.in1, new ArrayList<>());
+        // if param 1 monkey is unknown or has no calculated value, current monkey
+        // depends on it
+        if (param1Monkey == null || !param1Monkey.hasResult) {
+          if (!DEPENDS_ON.containsKey(this.param1Name)) {
+            DEPENDS_ON.put(this.param1Name, new ArrayList<>());
           }
-          dependentOn.get(this.in1).add(this.name);
+          DEPENDS_ON.get(this.param1Name).add(this.name);
         }
-        final Monkey in2M = monkeys.get(this.in2);
-        if (in2M == null || !in2M.hasResult) {
-          if (!dependentOn.containsKey(this.in2)) {
-            dependentOn.put(this.in2, new ArrayList<>());
+
+        final Monkey param2Monkey = MONKEYS.get(this.param2Name);
+        // if param 1 monkey is unknown or has no calculated value, current monkey
+        // depends on it
+        if (param2Monkey == null || !param2Monkey.hasResult) {
+          if (!DEPENDS_ON.containsKey(this.param2Name)) {
+            DEPENDS_ON.put(this.param2Name, new ArrayList<>());
           }
-          dependentOn.get(this.in2).add(this.name);
+          DEPENDS_ON.get(this.param2Name).add(this.name);
         }
-        if (in1M != null && in1M.hasResult && in2M != null && in2M.hasResult) {
-          this.result = this.function.apply(in1M.result, in2M.result);
+
+        // if both parameter is known and have value, current result can be
+        // calculated
+        if (param1Monkey != null && param1Monkey.hasResult && param2Monkey != null
+            && param2Monkey.hasResult) {
+          this.result =
+              this.function.apply(param1Monkey.result, param2Monkey.result);
           this.hasResult = true;
         }
 
       }
 
-      if (this.hasResult) {
-        if (dependentOn.containsKey(this.name)) {
-          dependentOn.get(this.name)
-              .forEach(mName -> monkeys.get(mName).tryToCalculate());
-          dependentOn.remove(this.name);
-        }
+      // if current result is already calculated
+      if (this.hasResult && DEPENDS_ON.containsKey(this.name)) {
+        // for each monkey that was dependent on this calculation, try to calculate
+        // their value
+        DEPENDS_ON.get(this.name)
+            .forEach(mName -> MONKEYS.get(mName).tryToCalculate());
+        DEPENDS_ON.remove(this.name);
       }
     }
 
-    void tryToRevCalculate() {
-      if (this.in1 == null && this.in2 == null) {
+
+    /**
+     * Tries to calculate a parameter value given an input and the other parameter.
+     * Used for Part 2
+     */
+    protected void tryToRevCalculate() {
+      // If monkey has no operation, nothing to do
+      if (this.param1Name == null && this.param2Name == null) {
         return;
       }
-      final Monkey in1M = monkeys.get(this.in1);
-      final Monkey in2M = monkeys.get(this.in2);
 
-      System.out.println(this.in1);
-      System.out.println(in1M);
-      if (in1M.result == null && in2M.result != null) {
-        in1M.result = this.revFunctionGet1.apply(this.result, in2M.result);
-        in1M.tryToRevCalculate();
-      } else if (in2M.result == null && in1M.result != null) {
-        in2M.result = this.revFunctionGet2.apply(this.result, in1M.result);
-        in2M.tryToRevCalculate();
+      // otherwise, get the parameter monkeys
+      final Monkey parameter1Monkey = MONKEYS.get(this.param1Name);
+      final Monkey parameter2Monkey = MONKEYS.get(this.param2Name);
+
+
+      if (parameter1Monkey.result == null && parameter2Monkey.result != null) {
+        // if param 1 result is unknown, param 2 result is known, calculate param 1
+        // value
+        parameter1Monkey.result =
+            this.revFunctionGet1.apply(this.result, parameter2Monkey.result);
+        // try to go back from newly known monkey value
+        parameter1Monkey.tryToRevCalculate();
+      } else if (parameter2Monkey.result == null
+          && parameter1Monkey.result != null) {
+        // if param 2 result is unknown, param 3 result is known, calculate param 2
+        // value
+        parameter2Monkey.result =
+            this.revFunctionGet2.apply(this.result, parameter1Monkey.result);
+        // try to go back from newly known monkey value
+        parameter2Monkey.tryToRevCalculate();
       }
     }
+
   }
 
   public static void main(final String[] str) throws IOException {
     String line;
-    final String[] splittedLine;
-
     final List<String> lines = new ArrayList<>();
 
     // read input
@@ -136,27 +209,57 @@ public class Sol21 {
     // part 1
     lines.forEach(l -> {
       final String[] splL = l.split(":");
-
-      final Monkey m = new Monkey(splL[0], splL[1]);
-      if (m.name.equals("humn")) {
-        System.out.println(m.result);
-        m.result = null;
-        m.hasResult = false;
-      }
-      monkeys.put(m.name, m);
-      m.tryToCalculate();
+      // create monkey
+      final Monkey monkey = new Monkey(splL[0], splL[1]);
+      // put them to Map
+      MONKEYS.put(monkey.name, monkey);
+      // try to calculate value
+      monkey.tryToCalculate();
     });
-    System.out.println(monkeys.get("humn").result);
-    System.out.println(monkeys.get("root").result);
+    System.out.println("Result for Part 1: " + MONKEYS.get("root").result);
 
-    monkeys.get("ztbt").result = monkeys.get("jzqh").result;
-    monkeys.get("ztbt").tryToRevCalculate();
+    // reset everything
+    MONKEYS.clear();
 
-    System.out.println(monkeys.get("humn").result);
+    // part 2
+    lines.forEach(l -> {
+      final String[] splL = l.split(":");
+      final Monkey monkey = new Monkey(splL[0], splL[1]);
 
-    // System.out.println(monkeys.get("humn").result);
+      if ("humn".equals(monkey.name)) {
+        // treat human monkey with unknown value
+        monkey.result = null;
+        monkey.hasResult = false;
+      }
+      MONKEYS.put(monkey.name, monkey);
 
-    // humn = -3887609740495
+      // still try to calculate cvalues
+      monkey.tryToCalculate();
+    });
+
+    // after trying to calculate all values but with an empty humn value, many values
+    // will be unknown even after running all calculations
+    final Monkey root = MONKEYS.get("root");
+
+    // we realised that at least one of the parameters has a value, thanks to the
+    // kind advent-of-code staff
+    // so we just make the other parameter's value to equal to it, and then try to
+    // reverse back everything
+
+    final Monkey rootIn1 = MONKEYS.get(root.param1Name);
+    final Monkey rootIn2 = MONKEYS.get(root.param2Name);
+
+    if (rootIn1.result == null) {
+      rootIn1.result = rootIn2.result;
+    }
+    if (rootIn2.result == null) {
+      rootIn2.result = rootIn1.result;
+    }
+
+    rootIn1.tryToRevCalculate();
+    rootIn2.tryToRevCalculate();
+
+    System.out.println("Solution for Part 2: " + MONKEYS.get("humn").result);
   }
 
 }
