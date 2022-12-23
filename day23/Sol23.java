@@ -12,72 +12,92 @@ import java.util.function.Function;
 
 public class Sol23 {
 
-  static List<Elf> elves = new ArrayList<>();
+  /** List of elves */
+  private static final List<Elf> ELVES = new ArrayList<>();
 
-  static int height = 1000;
+  /** Maximum height of the map */
+  private static final int HEIGHT = 1000;
 
-  static int width = 1000;
+  /** Maximum width of the map */
+  private static final int WIDTH = 1000;
 
-  static char currentMap[][] = new char[height][width];
+  /** Map of elves */
+  private static char currentMap[][] = new char[HEIGHT][WIDTH];
 
-  static Map<Coords, Elf> proposeds = new HashMap<>();
+  /** List of proposed coordinates together with the elf who proposed it */
+  private static Map<Coords, Elf> proposeds = new HashMap<>();
 
-  static List<Function<Coords, Coords>> getmovement;
+  /** Functions to check which way to move */
+  private static List<Function<Coords, Coords>> movementChecks;
 
-  static int elfMoves = 0;
+  /** number of elves moved in current round */
+  private static int elfMoves = 0;
 
   static {
-    getmovement = new ArrayList<>();
 
-    getmovement.add((current) -> {
-      final boolean N = currentMap[current.y - 1][current.x] == '#';
-      final boolean NE = currentMap[current.y - 1][current.x + 1] == '#';
-      final boolean NW = currentMap[current.y - 1][current.x - 1] == '#';
+    // add checks to list
+    movementChecks = new ArrayList<>();
 
-      if ((!N && !NE && !NW)) {
+    // north move
+    movementChecks.add((current) -> {
+      final boolean elfNorth = currentMap[current.y - 1][current.x] == '#';
+      final boolean elfNorthEast = currentMap[current.y - 1][current.x + 1] == '#';
+      final boolean elfNorthWest = currentMap[current.y - 1][current.x - 1] == '#';
+
+      if (!elfNorth && !elfNorthEast && !elfNorthWest) {
         return new Coords(current.x, current.y - 1);
       }
       return null;
     });
 
-    getmovement.add((current) -> {
-      final boolean S = currentMap[current.y + 1][current.x] == '#';
-      final boolean SE = currentMap[current.y + 1][current.x + 1] == '#';
-      final boolean SW = currentMap[current.y + 1][current.x - 1] == '#';
+    // south move
+    movementChecks.add((current) -> {
+      final boolean elfSouth = currentMap[current.y + 1][current.x] == '#';
+      final boolean elfSouthEast = currentMap[current.y + 1][current.x + 1] == '#';
+      final boolean elfSouthWest = currentMap[current.y + 1][current.x - 1] == '#';
 
-      if ((!S && !SE && !SW)) {
+      if (!elfSouth && !elfSouthEast && !elfSouthWest) {
         return new Coords(current.x, current.y + 1);
       }
       return null;
     });
 
-    getmovement.add((current) -> {
-      final boolean NW = currentMap[current.y - 1][current.x - 1] == '#';
-      final boolean SW = currentMap[current.y + 1][current.x - 1] == '#';
-      final boolean W = currentMap[current.y][current.x - 1] == '#';
+    // west move
+    movementChecks.add((current) -> {
+      final boolean elfNorthWest = currentMap[current.y - 1][current.x - 1] == '#';
+      final boolean elfSouthWest = currentMap[current.y + 1][current.x - 1] == '#';
+      final boolean elfWest = currentMap[current.y][current.x - 1] == '#';
 
-      if ((!W && !NW && !SW)) {
+      if (!elfWest && !elfNorthWest && !elfSouthWest) {
         return new Coords(current.x - 1, current.y);
       }
       return null;
     });
 
-    getmovement.add((current) -> {
-      final boolean NE = currentMap[current.y - 1][current.x + 1] == '#';
-      final boolean SE = currentMap[current.y + 1][current.x + 1] == '#';
-      final boolean E = currentMap[current.y][current.x + 1] == '#';
-      if ((!E && !NE && !SE)) {
+    // east move
+    movementChecks.add((current) -> {
+      final boolean elfNorthEast = currentMap[current.y - 1][current.x + 1] == '#';
+      final boolean elfSouthEast = currentMap[current.y + 1][current.x + 1] == '#';
+      final boolean elfEast = currentMap[current.y][current.x + 1] == '#';
+      if (!elfEast && !elfNorthEast && !elfSouthEast) {
         return new Coords(current.x + 1, current.y);
       }
       return null;
     });
   }
 
+  /**
+   * Coordinate
+   */
   private static class Coords {
-    int x;
-    int y;
 
-    Coords(final int x, final int y) {
+    /** X coordiante */
+    private transient final int x;
+
+    /** Y coordinate */
+    private transient final int y;
+
+    /* default */ Coords(final int x, final int y) {
       this.x = x;
       this.y = y;
     }
@@ -108,49 +128,74 @@ public class Sol23 {
     }
   }
 
-
+  /**
+   * Elf
+   */
   private static class Elf {
-    Coords current;
-    Coords proposed;
 
-    Elf(final int x, final int y) {
+    /** Current coordinate */
+    private transient Coords current;
+
+    /** Proposed coordinate. Could be null if cannot propose a coordinate */
+    private transient Coords proposed;
+
+    /**
+     * Creates an elf for parameter
+     *
+     * @param x
+     * @param y
+     */
+    /* default */ Elf(final int x, final int y) {
       this.current = new Coords(x, y);
     }
 
-    void propose() {
-      final boolean foundAtLeastOne = false;
+    /**
+     * Creates a proposed coordinate
+     */
+    /* default */void propose() {
 
-      final boolean N = currentMap[this.current.y - 1][this.current.x] == '#';
-      final boolean NE = currentMap[this.current.y - 1][this.current.x + 1] == '#';
-      final boolean NW = currentMap[this.current.y - 1][this.current.x - 1] == '#';
-      final boolean S = currentMap[this.current.y + 1][this.current.x] == '#';
-      final boolean SE = currentMap[this.current.y + 1][this.current.x + 1] == '#';
-      final boolean SW = currentMap[this.current.y + 1][this.current.x - 1] == '#';
-      final boolean W = currentMap[this.current.y][this.current.x - 1] == '#';
-      final boolean E = currentMap[this.current.y][this.current.x + 1] == '#';
+      // check if empty around
+      boolean emptyAround = true;
+      for (int yv = -1; yv < 2 && emptyAround; yv++) {
+        for (int xv = -1; xv < 2 && emptyAround; xv++) {
+          if (yv == 0 && xv == 0) {
+            continue;
+          }
 
-      this.proposed = null;
+          if (currentMap[this.current.y + yv][this.current.x + xv] == '#') {
+            emptyAround = false;
+          }
+        }
+      }
 
-      if ((!N && !NE && !NW && !S && !SE && !SW && !W && !E)) {
+      if (emptyAround) {
+        // return if empty
+        this.proposed = null;
         return;
       }
 
       elfMoves++;
+
+      // get new coordinate
       this.proposed =
-          getmovement.stream().filter(func -> func.apply(this.current) != null)
+          movementChecks.stream().filter(func -> func.apply(this.current) != null)
               .findFirst().map(func -> func.apply(this.current)).orElse(null);
 
+      // check if already proposed
       if (proposeds.containsKey(this.proposed)) {
+        // if proposed, revert other elf as well
         proposeds.get(this.proposed).proposed = null;
         this.proposed = null;
       } else {
+        // if not yet proposed, pu it to list
         proposeds.put(this.proposed, this);
       }
     }
 
-    void step() {
-
-
+    /**
+     * Steps to the proposed coordinate
+     */
+    /* default */void step() {
       if (this.proposed != null) {
         currentMap[this.current.y][this.current.x] = '.';
         this.current = this.proposed;
@@ -168,40 +213,39 @@ public class Sol23 {
         Files.newBufferedReader(Paths.get("in23.txt"), StandardCharsets.UTF_8)) {
 
       // read map
-      int y = height / 2;
+      int y = HEIGHT / 2;
       while ((line = buffR.readLine()) != null) {
         splittedLine = line.split("");
-        int x = width / 2;
+        int x = WIDTH / 2;
         for (final String chr : splittedLine) {
           currentMap[y][x] = chr.charAt(0);
           if (chr.charAt(0) == '#') {
             final Elf elf = new Elf(x, y);
-            elves.add(elf);
+            ELVES.add(elf);
           }
           x++;
         }
         y++;
       }
 
-      // System.out.println(
-      // elves.stream().map(elf -> elf.current).collect(Collectors.toList()));
-
       // part 1
       for (int i = 0; i < 10; i++) {
         simulateRound();
       }
 
-      final int minX = elves.stream().mapToInt(elf -> elf.current.x).min()
+      // get minimum and maximum coordinates
+      final int minX = ELVES.stream().mapToInt(elf -> elf.current.x).min()
           .orElse(Integer.MAX_VALUE);
-      final int maxX = elves.stream().mapToInt(elf -> elf.current.x).max()
+      final int maxX = ELVES.stream().mapToInt(elf -> elf.current.x).max()
           .orElse(Integer.MIN_VALUE);
-      final int minY = elves.stream().mapToInt(elf -> elf.current.y).min()
+      final int minY = ELVES.stream().mapToInt(elf -> elf.current.y).min()
           .orElse(Integer.MAX_VALUE);
-      final int maxY = elves.stream().mapToInt(elf -> elf.current.y).max()
+      final int maxY = ELVES.stream().mapToInt(elf -> elf.current.y).max()
           .orElse(Integer.MIN_VALUE);
 
-      System.out.println(((maxX - minX + 1) * (maxY - minY + 1)) - elves.size());
+      System.out.println((maxX - minX + 1) * (maxY - minY + 1) - ELVES.size());
 
+      // part 2
       int i = 11;
       while (simulateRound()) {
         i++;
@@ -209,19 +253,20 @@ public class Sol23 {
 
       System.out.println(i);
 
-      // System.out.println(
-      // elves.stream().map(elf -> elf.current).collect(Collectors.toList()));
-
-
     }
   }
 
-  static boolean simulateRound() {
+  /**
+   * Simulates a round
+   *
+   * @return Whether at least one elf moved
+   */
+  /* default */static boolean simulateRound() {
     elfMoves = 0;
-    elves.stream().forEach(elf -> elf.propose());
-    elves.stream().forEach(elf -> elf.step());
+    ELVES.stream().forEach(elf -> elf.propose());
+    ELVES.stream().forEach(elf -> elf.step());
     proposeds.clear();
-    getmovement.add(getmovement.remove(0));
+    movementChecks.add(movementChecks.remove(0));
     return elfMoves != 0;
   }
 
