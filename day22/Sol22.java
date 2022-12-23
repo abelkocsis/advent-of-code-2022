@@ -117,7 +117,7 @@ public class Sol22 {
           } else if (this.y >= yDiv3) {
             // new
             nextReal.y = 0;
-            nextReal.x = xDiv2 - (height - this.y + 1);
+            nextReal.x = xDiv2 - (height - this.y);
             nextReal.facing = 1;
           } else {
             return;
