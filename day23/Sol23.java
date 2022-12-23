@@ -24,6 +24,8 @@ public class Sol23 {
 
   static List<Function<Coords, Coords>> getmovement;
 
+  static int elfMoves = 0;
+
   static {
     getmovement = new ArrayList<>();
 
@@ -133,6 +135,7 @@ public class Sol23 {
         return;
       }
 
+      elfMoves++;
       this.proposed =
           getmovement.stream().filter(func -> func.apply(this.current) != null)
               .findFirst().map(func -> func.apply(this.current)).orElse(null);
@@ -183,13 +186,10 @@ public class Sol23 {
       // System.out.println(
       // elves.stream().map(elf -> elf.current).collect(Collectors.toList()));
 
-
+      // part 1
       for (int i = 0; i < 10; i++) {
         simulateRound();
       }
-
-      // System.out.println(
-      // elves.stream().map(elf -> elf.current).collect(Collectors.toList()));
 
       final int minX = elves.stream().mapToInt(elf -> elf.current.x).min()
           .orElse(Integer.MAX_VALUE);
@@ -201,14 +201,28 @@ public class Sol23 {
           .orElse(Integer.MIN_VALUE);
 
       System.out.println(((maxX - minX + 1) * (maxY - minY + 1)) - elves.size());
+
+      int i = 11;
+      while (simulateRound()) {
+        i++;
+      }
+
+      System.out.println(i);
+
+      // System.out.println(
+      // elves.stream().map(elf -> elf.current).collect(Collectors.toList()));
+
+
     }
   }
 
-  static void simulateRound() {
+  static boolean simulateRound() {
+    elfMoves = 0;
     elves.stream().forEach(elf -> elf.propose());
     elves.stream().forEach(elf -> elf.step());
     proposeds.clear();
     getmovement.add(getmovement.remove(0));
+    return elfMoves != 0;
   }
 
 }
