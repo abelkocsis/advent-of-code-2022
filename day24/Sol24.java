@@ -12,14 +12,14 @@ import java.util.Set;
 
 public class Sol24 {
 
-  static int width = 122; // 8; // 123;
+  static int width = 122; // 8; // 122;
   static int height = 27; // 6; // 27;
   static char[][] map = new char[height][width];
   static List<Line> lines = new ArrayList<>();
 
   static List<Blizzard> blizzards = new ArrayList<>();
 
-  static int maxTimeToSimulate = 600; // 20; // 3025;
+  static int maxTimeToSimulate = 600; // 12; // 600;
 
   static int minValue = Integer.MAX_VALUE;
 
@@ -106,7 +106,7 @@ public class Sol24 {
     String[] splittedLine;
 
     // read input
-    try (BufferedReader buffR =
+    try (final BufferedReader buffR =
         Files.newBufferedReader(Paths.get("in24.txt"), StandardCharsets.UTF_8)) {
 
       int y = 0;
@@ -132,7 +132,24 @@ public class Sol24 {
         simulateBlizzs(i);
       }
       // System.out.println(lines.get(1).occupiedAtTime);
-      System.out.println(simulateSteps(1, 0, 0));
+      final int p1 = simulateSteps(1, 0, 0, true);
+      System.out.println(p1);
+
+      minValue = Integer.MAX_VALUE;
+      lines.forEach(l -> {
+        l.hasBeenHereAtTime.clear();
+      });
+
+      final int p2 = simulateSteps(width - 2, height - 1, p1, false);
+      System.out.println(p2);
+
+      minValue = Integer.MAX_VALUE;
+      lines.forEach(l -> {
+        l.hasBeenHereAtTime.clear();
+      });
+
+      System.out.println(simulateSteps(1, 0, p2, true));
+
     }
   }
 
@@ -140,13 +157,15 @@ public class Sol24 {
     blizzards.forEach(b -> b.step(i));
   }
 
-  static int simulateSteps(final int x, final int y, final int time) {
-    if ((y < 0) || (time >= minValue) || (map[y][x] == '#')
+  static int simulateSteps(final int x, final int y, final int time,
+      final boolean isGoalDown) {
+    if ((y < 0) || y >= height || (time >= minValue) || time > 1506
+        || (map[y][x] == '#')
         || lines.get(y).occupiedAtTime.get(time % maxTimeToSimulate).contains(x)) {
       return Integer.MAX_VALUE;
     }
 
-    if (y == height - 1) {
+    if ((isGoalDown ? y == height - 1 : y == 0)) {
       if (time < minValue) {
         minValue = time;
         return time;
@@ -167,11 +186,11 @@ public class Sol24 {
     lines.get(y).hasBeenHereAtTime.get(time).add(x);
 
     // try all directions
-    final int val1 = simulateSteps(x + 1, y, time + 1);
-    final int val2 = simulateSteps(x - 1, y, time + 1);
-    final int val3 = simulateSteps(x, y + 1, time + 1);
-    final int val4 = simulateSteps(x, y - 1, time + 1);
-    final int val5 = simulateSteps(x, y, time + 1);
+    final int val1 = simulateSteps(x + 1, y, time + 1, isGoalDown);
+    final int val2 = simulateSteps(x - 1, y, time + 1, isGoalDown);
+    final int val3 = simulateSteps(x, y + 1, time + 1, isGoalDown);
+    final int val4 = simulateSteps(x, y - 1, time + 1, isGoalDown);
+    final int val5 = simulateSteps(x, y, time + 1, isGoalDown);
 
     final int min =
         Math.min(Math.min(val1, val2), Math.min(val3, Math.min(val4, val5)));
