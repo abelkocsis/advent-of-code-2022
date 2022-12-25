@@ -17,7 +17,7 @@ public class Sol25 {
       while ((line = buffR.readLine()) != null) {
         sum += fromSNAFU(line);
       }
-      System.out.println(toSNAFU(sum));
+      System.out.println("Solution for Part 1: " + toSNAFU(sum));
     }
 
 
