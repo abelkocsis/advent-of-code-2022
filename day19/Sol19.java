@@ -10,7 +10,7 @@ import java.util.List;
 public class Sol19 {
 
   /** Temporary max values for a particular print, for any given time */
-  static public final List<Integer> maxes =
+  static private List<Integer> maxes =
       new ArrayList<>(Arrays.asList(new Integer[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}));
 
