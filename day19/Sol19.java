@@ -5,7 +5,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -18,9 +17,9 @@ public class Sol19 {
   static int maxThreads = 100;
 
 
-  static public final List<Integer> maxes = Collections.synchronizedList(
+  static public final List<Integer> maxes =
       new ArrayList<>(Arrays.asList(new Integer[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})));
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}));
 
   // new ArrayList<>(Arrays.asList(new Integer[] {-1}));
 
@@ -106,135 +105,6 @@ public class Sol19 {
 
   }
 
-  static class MyThread extends Thread {
-    Print print;
-    int time;
-    Status status;
-    int result;
-
-    MyThread(final Print print, final int time, final Status status) {
-      this.print = print;
-      this.time = time;
-      this.status = status;
-    }
-
-    @Override
-    public void run() {
-      this.result = concurrentSimulate(this.print, this.time, this.status);
-    }
-
-    public int runLinear() {
-      return concurrentSimulate(this.print, this.time, this.status);
-    }
-  }
-
-  public static int concurrentSimulate(final Print print, final int time,
-      final Status status) {
-    if (time == maxtime - 1) {
-      final int res = status.getStatusIn(1).geodes;
-      if (res > maxes.get(time - 1)) {
-        maxes.set(time - 1, res);
-        maxes.set(time, res);
-      }
-      return res;
-    }
-    int maxObsidianFromHere = status.obsidianRobots * (maxtime - time + 1);
-    for (int i = time; i < maxtime; i++) {
-      maxObsidianFromHere += maxtime - i;
-    }
-    if (maxObsidianFromHere <= maxes.get(time)) {
-      return -1;
-    }
-
-
-    if (status.ores >= print.oreForGeoRobot
-        && status.obsidians >= print.obsForGeoRobot) {
-      // if can by a geode robot, by one, that's all.
-      status.ores -= print.oreForGeoRobot;
-      status.obsidians -= print.obsForGeoRobot;
-
-      final Status nextStatus = status.getStatusIn(1);
-      nextStatus.geodeRobots++;
-      final int result = concurrentSimulate(print, time + 1, nextStatus);
-      if (result > maxes.get(time)) {
-        maxes.set(time, result);
-      }
-      return result;
-
-    } else {
-      final List<MyThread> threads = new ArrayList<>();
-      // else, try every scenarios
-      int max = -1;
-      Status nextStatus;
-      if (status.ores >= print.oreForObsRobot
-          && status.clays >= print.clayForObsRobot) {
-        // buy obsidian robot
-        nextStatus = status.getStatusIn(1);
-        nextStatus.ores -= print.oreForObsRobot;
-        nextStatus.clays -= print.clayForObsRobot;
-        nextStatus.obsidianRobots++;
-        final MyThread tr = new MyThread(print, time + 1, nextStatus);
-        threads.add(tr);
-      }
-      if (status.ores >= print.oreForClayRobot) {
-        // buy clay robot
-        nextStatus = status.getStatusIn(1);
-        nextStatus.ores -= print.oreForClayRobot;
-        nextStatus.clayRobots++;
-        final MyThread tr = new MyThread(print, time + 1, nextStatus);
-        threads.add(tr);
-      }
-      if (status.ores >= print.oreForOreRobot) {
-        // buy clas robot
-        nextStatus = status.getStatusIn(1);
-        nextStatus.ores -= print.oreForOreRobot;
-        nextStatus.oreRobots++;
-        final MyThread tr = new MyThread(print, time + 1, nextStatus);
-        threads.add(tr);
-      }
-      final MyThread tr = new MyThread(print, time + 1, status.getStatusIn(1));
-      threads.add(tr);
-
-      if (maxtime - time < 18) {
-        for (final MyThread thread : threads) {
-          final int res = simulate(thread.print, thread.time, thread.status);
-          if (res > max) {
-            max = res;
-          }
-        }
-      } else {
-        final int trCount = threadCount.incrementAndGet();
-        if (trCount < maxThreads) {
-          threads.forEach(thread -> thread.start());
-          threads.forEach(thread -> {
-            try {
-              thread.join();
-            } catch (final InterruptedException e) {
-              // TODO Auto-generated catch block
-              e.printStackTrace();
-            }
-          });
-          threadCount.decrementAndGet();
-          max = threads.stream().mapToInt(thread -> thread.result).max().orElse(-1);
-        } else {
-          threadCount.decrementAndGet();
-          for (final MyThread thread : threads) {
-            final int res = thread.runLinear();
-            if (res > max) {
-              max = res;
-            }
-          }
-        }
-      }
-
-      if (max > maxes.get(time)) {
-        maxes.set(time, max);
-      }
-      return max;
-
-    }
-  }
-
   public static void main(final String[] args) {
     String line;
     int count = 0;
@@ -247,20 +117,13 @@ public class Sol19 {
         }
         final Print p = new Print(line);
         final Status s = new Status();
-        final int sim = concurrentSimulate(p, 0, s);
+        final int sim = simulate(p, 0, s);
         System.out.println(p.index + ": " + sim);
+
         count += sim * p.index;
       }
       System.out.println(count);
 
-
-
-      // line = buffR.readLine();
-      // final Print p2 = new Print(line);
-      // System.out.println(p2);
-
-      // while ((line = buffR.readLine()) != null) {
-      // }
     } catch (final IOException e) {
       System.out.println("IOException in try block =>" + e.getMessage());
     }
@@ -275,18 +138,103 @@ public class Sol19 {
       }
       return res;
     }
-    int maxObsidianFromHere = status.obsidianRobots * (maxtime - time + 1);
-    for (int i = time; i < maxtime; i++) {
-      maxObsidianFromHere += maxtime - i;
+
+    int maxOresFromHere = status.ores + status.oreRobots * (maxtime - time + 1);
+    int oreTemp = status.ores;
+    int oreRobotsTemp = status.oreRobots;
+    int firstEnougOresForClayRobotEst = Integer.MAX_VALUE;
+    for (int t = time; t <= maxtime; t++) {
+      if (firstEnougOresForClayRobotEst == Integer.MAX_VALUE
+          && oreTemp >= print.oreForClayRobot) {
+        firstEnougOresForClayRobotEst = t;
+      }
+
+      if (t < maxtime - print.oreForOreRobot && oreTemp >= print.oreForOreRobot) {
+        oreTemp -= print.oreForOreRobot;
+        oreTemp += oreRobotsTemp;
+        oreRobotsTemp++;
+
+        if (firstEnougOresForClayRobotEst == Integer.MAX_VALUE) {
+          firstEnougOresForClayRobotEst = t + 1;
+        }
+      } else {
+        oreTemp += oreRobotsTemp;
+      }
     }
-    if (maxObsidianFromHere <= maxes.get(time)) {
+    maxOresFromHere = oreTemp;
+
+
+    int maxClaysFromHere = status.clays + status.clayRobots * (maxtime - time + 1);
+    int clayTemp = status.clays;
+    int clayTobotsTemp = status.clayRobots;
+    int firstEnougClaysForObsRobotEst = Integer.MAX_VALUE;
+    oreTemp = maxOresFromHere;
+
+    for (int t = time; t <= maxtime; t++) {
+      if (firstEnougClaysForObsRobotEst == Integer.MAX_VALUE
+          && clayTemp >= print.clayForObsRobot) {
+        firstEnougClaysForObsRobotEst = t;
+      }
+
+      if (t >= firstEnougOresForClayRobotEst && oreTemp >= print.oreForClayRobot) {
+        oreTemp -= print.oreForClayRobot;
+        clayTemp += clayTobotsTemp;
+        clayTobotsTemp++;
+      } else {
+        clayTemp += clayTobotsTemp;
+      }
+      // System.out.println(clayTemp);
+
+    }
+    maxClaysFromHere = clayTemp;
+
+    // System.out.println(maxClaysFromHere);
+
+
+    int maxObsidiansFromHere =
+        status.obsidians + status.obsidianRobots * (maxtime - time + 1);
+    oreTemp = maxOresFromHere;
+    clayTemp = maxClaysFromHere;
+    int obsRobotsTemp = status.obsidianRobots;
+    int obsTemp = status.obsidians;
+    int firstEnougObsForGeod = Integer.MAX_VALUE;
+    for (int t = time; t <= maxtime; t++) {
+      if (firstEnougObsForGeod == Integer.MAX_VALUE
+          && obsTemp >= print.obsForGeoRobot) {
+        firstEnougObsForGeod = t;
+      }
+      if (t >= firstEnougClaysForObsRobotEst && oreTemp >= print.oreForObsRobot
+          && clayTemp >= print.clayForObsRobot) {
+        oreTemp -= print.oreForObsRobot;
+        clayTemp -= print.clayForObsRobot;
+        obsTemp += obsRobotsTemp;
+        obsRobotsTemp++;
+      } else {
+        obsTemp += obsRobotsTemp;
+      }
+
+    }
+    maxObsidiansFromHere = obsTemp;
+
+    int maxGeodesFromHere =
+        status.geodes + status.geodeRobots * (maxtime - time + 1);
+    oreTemp = maxOresFromHere;
+    obsTemp = maxObsidiansFromHere;
+    for (int t = firstEnougObsForGeod; t < maxtime && oreTemp >= print.oreForGeoRobot
+        && obsTemp >= print.obsForGeoRobot; t++) {
+      maxGeodesFromHere += maxtime - t;
+      oreTemp -= print.oreForGeoRobot;
+      obsTemp -= print.obsForGeoRobot;
+    }
+    // System.out.println(maxGeodesFromHere);
+    if (maxGeodesFromHere <= maxes.get(time)
+        || maxGeodesFromHere <= maxes.get(maxtime)) {
       return -1;
     }
 
-
     if (status.ores >= print.oreForGeoRobot
         && status.obsidians >= print.obsForGeoRobot) {
-      // if can by a geode robot, by one, that's all.
+      // if can buy a geode robot, buy one, that's all.
       status.ores -= print.oreForGeoRobot;
       status.obsidians -= print.obsForGeoRobot;
 
@@ -302,7 +250,8 @@ public class Sol19 {
       // else, try every scenarios
       int max = -1;
       Status nextStatus;
-      if (status.ores >= print.oreForObsRobot
+      if (time < maxtime - print.oreForOreRobot
+          && status.ores >= print.oreForObsRobot
           && status.clays >= print.clayForObsRobot) {
         // buy obsidian robot
         nextStatus = status.getStatusIn(1);
