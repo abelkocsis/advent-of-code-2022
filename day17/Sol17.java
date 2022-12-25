@@ -56,7 +56,7 @@ public class Sol17 {
      *
      * @param i
      */
-    Rock(final int i) {
+    private Rock(final int i) {
       switch (i % 5) {
         case 0:
           this.rock[0] = "####".toCharArray();
