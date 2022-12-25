@@ -19,9 +19,6 @@ public class Sol25 {
       }
       System.out.println("Solution for Part 1: " + toSNAFU(sum));
     }
-
-
-
   }
 
   /**
