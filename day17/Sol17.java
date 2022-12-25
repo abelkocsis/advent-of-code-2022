@@ -14,25 +14,49 @@ import java.util.stream.LongStream;
 
 public class Sol17 {
 
-  static char[] jets;
+  /** Array of jets */
+  private static char[] jets;
 
-  static List<Set<Integer>> occupation = new ArrayList<>();
+  /** Occupied x values for each row at the moment */
+  private static List<Set<Integer>> occupation = new ArrayList<>();
 
-  static long removed = 0L;
-  static int chamberWidth = 7;
+  /** Number of removed lines from occupation list at the moment */
+  private static long removed = 0L;
 
+  /** Width of chamber */
+  private static final int CHAMBER_WIDTH = 7;
 
-  static Long[] highestAtX = {0L, 0L, 0L, 0L, 0L, 0L, 0L};
+  /** Highest value at given column */
+  private static Long[] highestAtX = {0L, 0L, 0L, 0L, 0L, 0L, 0L};
 
-  // static List<List<Set<Integer>>> previousOccupations = new ArrayList<>();
-  static Map<Long, Status> previousOccupations = new HashMap<>();
+  /** Previous Status given time value */
+  private static Map<Long, Status> previousOccupations = new HashMap<>();
 
+  /**
+   * Class to represent the status of the chamber at a given state
+   */
   private static class Status {
+
+    /** Occupation list */
     List<Set<Integer>> occupation;
+
+    /** Form id that was lastly droppped */
     int lastForm;
+
+    /** Number of removed items from current occupation list */
     long removed;
+
+    /** After which step this status arised */
     long afterStep;
 
+    /**
+     * Creates status instance from parameters
+     *
+     * @param occupation
+     * @param lastForm
+     * @param removed
+     * @param afterStep
+     */
     Status(final List<Set<Integer>> occupation, final int lastForm,
         final long removed, final long afterStep) {
       this.occupation = occupation;
@@ -42,13 +66,30 @@ public class Sol17 {
     }
   }
 
+  /**
+   * Represents a rock. <br>
+   * We store the rock in a 4x4 array, where [0][0] is the bottom left point of the
+   * rock.
+   */
   static class Rock {
-    char[][] rock = new char[4][4];
 
-    int x;
-    long y;
-    int width;
+    /** Rock elems. '#' for rock and '.' for empty. */
+    private final char[][] rock = new char[4][4];
 
+    /** X coordinate of rock */
+    private int x;
+
+    /** Y coordiante of rock */
+    private long y;
+
+    /** Real width of rock */
+    private int width;
+
+    /**
+     * Creates a rock based on the parameter
+     *
+     * @param i
+     */
     Rock(final int i) {
       switch (i % 5) {
         case 0:
@@ -89,25 +130,28 @@ public class Sol17 {
       }
     }
 
+    /**
+     * Whether rock collides at the moment with the chamber wall or any other rock
+     *
+     * @return
+     */
     boolean collides() {
-      if (this.x < 0 || this.x + this.width > chamberWidth || this.y < removed) {
+      if (this.x < 0 || this.x + this.width > CHAMBER_WIDTH || this.y < removed) {
+        // collides with chamber wall
         return true;
       }
       for (int rockY = 0; rockY < 4; rockY++) {
-
         final long realY = this.y + rockY;
-
         if (realY >= getOccupiedHeight()) {
-
+          // rock currently is higher than any other rock
           return false;
         }
         for (int rockX = 0; rockX < 4; rockX++) {
           if (this.rock[rockY][rockX] == '.') {
             continue;
           }
-
           if (getOccupations(realY).contains(this.x + rockX)) {
-
+            // rock collides with another (settled) rock
             return true;
           }
         }
@@ -115,23 +159,21 @@ public class Sol17 {
       return false;
     }
 
+    /**
+     * Settles rock at current coordiante
+     */
     void settle() {
-      // System.out.println("Settles with: " + this.x + ", " + this.y);
       for (int rockY = 0; rockY < 4; rockY++) {
         for (int rockX = 0; rockX < 4; rockX++) {
           if (this.rock[rockY][rockX] == '#') {
+            // for each rock point, we write the occupation list
             final long realY = this.y + rockY;
             final int realX = rockX + this.x;
-
-
             if (realY >= getOccupiedHeight()) {
-
               addOccLine();
             }
 
-            // System.out.println("Put occ");
             getOccupations(realY).add(realX);
-
             if (realY > highestAtX[realX]) {
               highestAtX[realX] = realY;
             }
@@ -141,11 +183,17 @@ public class Sol17 {
       clearLines();
     }
 
+    /**
+     * Simulates the moving ov a rock. It falls until can and then it settles.
+     *
+     * @param time Time when rock appears
+     * @return Time after the rock is settled
+     */
     long simulate(long time) {
+      // default coordinates
       this.x = 2;
       this.y = getOccupiedHeight() + 3;
 
-      // push
       boolean isMoving = true;
       while (isMoving) {
         // apply jet, if possible
@@ -153,29 +201,24 @@ public class Sol17 {
         if (jet == '<') {
           this.x--;
           if (this.collides()) {
+            // cannot apply jet
             this.x++;
-            // System.out.println("Rock couldn't move to left.");
-          } else {
-            // System.out.println("Rock moved to left.");
           }
 
         } else {
           this.x++;
           if (this.collides()) {
+            // cannot apply jet
             this.x--;
-            // System.out.println("Rock couldn't move to right.");
-          } else {
-            // System.out.println("Rock moved to right.");
           }
-
         }
 
         // move down, if possible
         this.y--;
         time++;
         if (this.collides()) {
+          // could not move down, should settle here
           this.y++;
-          // should settle here!
           isMoving = false;
           this.settle();
         }
@@ -194,96 +237,28 @@ public class Sol17 {
     } catch (final IOException e) {
       System.out.println("IOException in try block =>" + e.getMessage());
     }
-    System.out.println(jets.length);
 
-    long time = 0;
-    final long allRocketsLen = 1000000000000L;
+    final long p1 = simulateThrowingOf(2022);
+    System.out.println("Solution for Part 1: " + p1);
 
-    long foundI = -1;
-    long foundJ = -1;
-    long heightInc = 0;
-    for (long i = 0; i < allRocketsLen; i++) {
-      time = simulate((int) (i % 5), time);
+    final long p2 = simulateThrowingOf(1000000000000L);
+    System.out.println("Solution for Part 2: " + p2);
 
-      /*
-       * if (i % 1710 == 861) { System.out.println("After step " + i);
-       * System.out.println("After time " + time);
-       * System.out.println("Current height: " + getOccupiedHeight());
-       * System.out.println("Jet index" + (time % jets.length)); for (int asd = 0;
-       * asd < occupation.size(); asd++) { System.out.println(occupation.get(asd)); }
-       * }
-       */
-
-
-
-      if (foundJ == -1) {
-        previousOccupations.put(time,
-            new Status(List.copyOf(occupation), (int) (i % 5), removed, i));
-
-        for (long timeToCheck = time - jets.length; timeToCheck >= 0; timeToCheck -=
-            jets.length) {
-          if (previousOccupations.containsKey(timeToCheck)) {
-            final Status st = previousOccupations.get(timeToCheck);
-            if (st.lastForm == (int) (i % 5) && st.occupation.equals(occupation)) {
-              foundJ = st.afterStep;
-              heightInc = removed - st.removed;
-              break;
-            }
-
-          }
-        }
-        if (foundJ != -1) {
-          foundI = i;
-          break;
-        }
-      }
-
-
-
-    }
-
-    if (foundI == -1) {
-      System.out.println("Current height: " + getOccupiedHeight());
-      System.out.println(removed);
-      System.out.println(occupation.size());
-      System.out.println(occupation.get(37));
-      return;
-    }
-
-    System.out.println("foundI: " + foundI);
-    System.out.println("foundJ: " + foundJ);
-    System.out.println("heightInc: " + heightInc);
-
-    final long stepInc = foundI - foundJ;
-    System.out.println("stepInc: " + stepInc);
-    System.out.println("REmoved: " + removed);
-
-    final long timesToDo = ((allRocketsLen - foundI) / stepInc);
-
-    removed += timesToDo * heightInc;
-
-    System.out.println(timesToDo);
-    System.out.println("REmoved: " + removed);
-    System.out.println("timesToDo: " + timesToDo);
-    System.out.println(foundI + timesToDo * stepInc);
-    System.out.println("Current height: " + getOccupiedHeight());
-
-
-    for (long i = foundI + timesToDo * stepInc + 1; i < allRocketsLen; i++) {
-      time = simulate((int) (i % 5), time);
-      // System.out.println("Step" + i);
-    }
-    // 1577184069411
-
-    System.out.println("Current height: " + getOccupiedHeight());
-    System.out.println("Good solution: " + (getOccupiedHeight() == 1514285714288L));
   }
 
-  static void addOccLine() {
+  /**
+   * Adds new line to the end of occupation list
+   */
+  private static void addOccLine() {
     occupation.add(new HashSet<>());
   }
 
-  static void clearLines() {
+  /**
+   * Clears all unnecessary lines from occupation list (lines that cannot be
+   * reached). Increases removed variable with the number of removed lines so the
+   * overall lines can be tracked
+   */
+  private static void clearLines() {
 
     final long clearFrom = Arrays.asList(highestAtX).stream().reduce(highestAtX[0],
         (a, b) -> a < b ? a : b);
@@ -294,18 +269,113 @@ public class Sol17 {
     }
   }
 
+  /**
+   * Simulates the throwing of number of rocks in parameter
+   *
+   * @param number
+   * @return
+   */
+  private static long simulateThrowingOf(final long number) {
+    long time = 0;
+
+    long foundSameSecond = -1;
+    long foundSameFirst = -1;
+    long heightInc = 0;
+
+    for (long i = 0; i < number; i++) {
+
+      // simulate next rock
+      time = simulate((int) (i % 5), time);
+
+      // let's save current status to the previousOccupations list
+      previousOccupations.put(time,
+          new Status(List.copyOf(occupation), (int) (i % 5), removed, i));
+
+      // try to find the same status, where the time equals to currentTime - k *
+      // jets.length. We know that if two of these statuses are the same, they will
+      // repeat again and again (as same jet + same rock form will repeat again and
+      // again with the same height increase)
+      for (long timeToCheck = time - jets.length; timeToCheck >= 0; timeToCheck -=
+          jets.length) {
+        if (previousOccupations.containsKey(timeToCheck)) {
+          // found repeating one
+
+          final Status st = previousOccupations.get(timeToCheck);
+          if (st.lastForm == (int) (i % 5) && st.occupation.equals(occupation)) {
+            foundSameFirst = st.afterStep;
+
+            // height increase between same statuses
+            heightInc = removed - st.removed;
+
+            // finish for loop
+            break;
+          }
+
+        }
+      }
+      if (foundSameFirst != -1) {
+        foundSameSecond = i;
+        break;
+      }
+
+    }
+
+    // if couldn't find repeating ones, then we simulated all. just return the
+    // height.
+    if (foundSameSecond == -1) {
+      return getOccupiedHeight();
+    }
+
+
+    // increase numbers until the last repeating moment
+    final long stepInc = foundSameSecond - foundSameFirst;
+    final long timesToDo = ((number - foundSameSecond) / stepInc);
+    removed += timesToDo * heightInc;
+
+    // simulate the rest of the steps
+    for (long i = foundSameSecond + timesToDo * stepInc + 1; i < number; i++) {
+      time = simulate((int) (i % 5), time);
+    }
+
+    return getOccupiedHeight();
+  }
+
+  /**
+   * Gets current jet value for given time
+   *
+   * @param time
+   * @return
+   */
   static char getJet(final long time) {
     return jets[(int) (time % jets.length)];
   }
 
+  /**
+   * Gets occupation for given row
+   *
+   * @param y
+   * @return
+   */
   static Set<Integer> getOccupations(final long y) {
     return occupation.get((int) (y - removed));
   }
 
+  /**
+   * Gets overall number of occupied rows
+   *
+   * @return
+   */
   static long getOccupiedHeight() {
     return removed + occupation.size();
   }
 
+  /**
+   * Simulates the falling of a single rock
+   *
+   * @param simulationNumber
+   * @param time
+   * @return
+   */
   static long simulate(final int simulationNumber, final long time) {
     return new Rock(simulationNumber).simulate(time);
   }
