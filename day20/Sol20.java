@@ -9,35 +9,57 @@ import java.util.Objects;
 
 public class Sol20 {
 
-  static List<Pair> originalList = new LinkedList<>();
-  static List<Pair> messageForPart1 = new LinkedList<>();
-  static List<Pair> messageForPart2 = new LinkedList<>();
+  /** Original list */
+  private static List<Elem> originalList = new LinkedList<>();
 
-  static long decryptKey = 811589153;
+  /** Elements to decrypt for Part 1 */
+  private static List<Elem> elemsForPart1 = new LinkedList<>();
 
-  static class Pair {
-    long number;
-    boolean isDecoded;
-    final int oriIndex;
+  /** Elements to decrypt for Part 2 */
+  private static List<Elem> elemsForPart2 = new LinkedList<>();
 
-    Pair(final long number, final boolean isDecoded, final int oriIndex) {
+  /** Decrypt key */
+  private static final long DECRYPT_KEY = 811_589_153;
+
+  /**
+   * Element
+   */
+  private static class Elem {
+
+    /** Number, after of before decrption */
+    private long number;
+
+    /** Original index of element */
+    private final int oriIndex;
+
+    /**
+     * Creates an element from its parameters
+     *
+     * @param number
+     * @param oriIndex
+     */
+    private Elem(final long number, final int oriIndex) {
       this.number = number;
-      this.isDecoded = isDecoded;
       this.oriIndex = oriIndex;
     }
 
-    Pair(final String line, final int index) {
+    /**
+     * Creates an element from input
+     *
+     * @param line
+     * @param index
+     */
+    private Elem(final String line, final int index) {
       this.number = Long.parseLong(line);
       this.oriIndex = index;
-      this.isDecoded = false;
     }
 
     @Override
     public boolean equals(final Object o) {
-      if ((o == null) || !(o instanceof Pair)) {
+      if (o == null || !(o instanceof Elem)) {
         return false;
       }
-      final Pair pairObj = (Pair) o;
+      final Elem pairObj = (Elem) o;
       return this.oriIndex == pairObj.oriIndex && pairObj.number == this.number;
     }
 
@@ -46,33 +68,40 @@ public class Sol20 {
       return Objects.hash(this.number, this.oriIndex);
     }
 
-    @Override
-    public String toString() {
-      return "(" + this.number + "," + this.isDecoded + ")";
-    }
+    /**
+     * Calculates decrypted value for Part 1
+     *
+     * @return
+     */
+    private int calculateP1() {
+      final long index = elemsForPart1.indexOf(this);
+      elemsForPart1.remove(this);
+      final int added = (int) (index + this.number) % elemsForPart1.size();
 
-    int calculateP1(final int index) {
-      messageForPart1.remove(index);
-      final int added = (int) (index + this.number) % messageForPart1.size();
-
-      final int newIndex = added > 0 ? added : messageForPart1.size() + added;
-      messageForPart1.add(newIndex, this);
-      this.isDecoded = true;
+      final int newIndex = added > 0 ? added : elemsForPart1.size() + added;
+      elemsForPart1.add(newIndex, this);
       return newIndex;
     }
 
-    void calculateP2() {
-      final long index = messageForPart2.indexOf(this);
-      messageForPart2.remove((int) index);
-      final long added = (this.number + index) % messageForPart2.size();
+    /**
+     * Calculates decrypted value for Part 2
+     *
+     * @return
+     */
+    private void calculateP2() {
+      final long index = elemsForPart2.indexOf(this);
+      elemsForPart2.remove((int) index);
+      final long added = (this.number + index) % elemsForPart2.size();
 
-      final int newIndex =
-          (int) (added >= 0 ? added : messageForPart2.size() + added);
-      messageForPart2.add(newIndex, this);
+      final int newIndex = (int) (added >= 0 ? added : elemsForPart2.size() + added);
+      elemsForPart2.add(newIndex, this);
     }
 
-    void multyByDecKey() {
-      this.number *= decryptKey;
+    /**
+     * Multiplies value with decryption key
+     */
+    private void multyByDecKey() {
+      this.number *= DECRYPT_KEY;
     }
   }
 
@@ -84,9 +113,9 @@ public class Sol20 {
     try (BufferedReader buffR =
         Files.newBufferedReader(Paths.get("in20.txt"), StandardCharsets.UTF_8)) {
       while ((line = buffR.readLine()) != null) {
-        messageForPart1.add(new Pair(line, in));
-        messageForPart2.add(new Pair(line, in));
-        final Pair p = new Pair(line, in);
+        elemsForPart1.add(new Elem(line, in));
+        elemsForPart2.add(new Elem(line, in));
+        final Elem p = new Elem(line, in);
         originalList.add(p);
         if (p.number == 0) {
           oriIndexOfNull = in;
@@ -97,56 +126,35 @@ public class Sol20 {
 
 
     // Part 1
-    int index = 0;
-    // System.out.println(message);
-    while (index < messageForPart1.size()) {
-      final Pair p = messageForPart1.get(index);
-      if (p.isDecoded) {
-        index++;
-      } else {
-        final int newIndex = p.calculateP1(index);
-        if (newIndex < index) {
-          index++;
-        }
-        // System.out.println(message);
-      }
+    for (final Elem p : originalList) {
+      p.calculateP1();
     }
 
-    final int nullIndex = messageForPart1.indexOf(new Pair(0, true, oriIndexOfNull));
-    // System.out.println(nullIndex);
-
+    final int nullIndex = elemsForPart1.indexOf(new Elem(0, oriIndexOfNull));
     int count = 0;
     for (int i = 1000; i < 3001; i += 1000) {
-      count += messageForPart1.get((nullIndex + i) % messageForPart1.size()).number;
+      count += elemsForPart1.get((nullIndex + i) % elemsForPart1.size()).number;
     }
 
-    System.out.println(count);
+    System.out.println("Solution for Part 1: " + count);
 
-
-    originalList.stream().forEach(pair -> pair.multyByDecKey());
     // Part 2
-
-    messageForPart2.stream().forEach(pair -> pair.multyByDecKey());
-    // System.out.println(messageForPart2);
+    originalList.stream().forEach(pair -> pair.multyByDecKey());
+    elemsForPart2.stream().forEach(pair -> pair.multyByDecKey());
     for (int i = 0; i < 10; i++) {
-      for (final Pair p : originalList) {
+      for (final Elem p : originalList) {
         p.calculateP2();
       }
 
     }
 
-    final int nullIndex2 =
-        messageForPart2.indexOf(new Pair(0, false, oriIndexOfNull));
-    System.out.println(nullIndex2);
+    final int nullIndex2 = elemsForPart2.indexOf(new Elem(0, oriIndexOfNull));
 
     long count2 = 0;
     for (int i = 1000; i < 3001; i += 1000) {
-      System.out.println(
-          messageForPart2.get((nullIndex2 + i) % messageForPart2.size()).number);
-      count2 +=
-          messageForPart2.get((nullIndex2 + i) % messageForPart2.size()).number;
+      count2 += elemsForPart2.get((nullIndex2 + i) % elemsForPart2.size()).number;
     }
-    System.out.println(count2);
+    System.out.println("Solution for Part 2: " + count2);
 
   }
 
