@@ -11,80 +11,133 @@ import java.util.function.BiFunction;
 
 public class Sol21 {
 
-  static Map<String, Monkey> monkeys = new HashMap<>();
-  static Map<String, List<String>> dependentOn = new HashMap<>();
+  /** List of all monkeys */
+  private static Map<String, Monkey> monkeys = new HashMap<>();
 
-  static class Monkey {
-    boolean hasResult = false;
-    String name;
-    Long result = null;
-    String in1 = null;
-    String in2 = null;
-    BiFunction<Long, Long, Long> function;
-    BiFunction<Long, Long, Long> revFunctionGet1;
-    BiFunction<Long, Long, Long> revFunctionGet2;
+  /**
+   * Dependent list. if MonkeyNameValue is in the list belonging to key
+   * MonkeyNameKey, it means that monkey's value with name MonkeyNameValue can only
+   * be calculated after MonkeyNameKey's value is calculated. Not that it does not
+   * mean that MonkeyNameValue's value can be definitely calculated as it can be
+   * dependent on more monkeys' values.
+   */
+  private static Map<String, List<String>> dependentOn = new HashMap<>();
 
-    Monkey(final String name, final String inOperation) {
+  /**
+   * Representing a monkey
+   */
+  private static class Monkey {
+
+    /** Whether monkey has a result to shout */
+    private boolean hasResult = false;
+
+    /** Name of the monkey */
+    private final String name;
+
+    /** Result to shout */
+    private Long result = null;
+
+    /**
+     * The first parameter of the operation, if the monkey has an operation not a
+     * value.
+     */
+    private String param1 = null;
+
+    /**
+     * The second parameter of the operation, if the monkey has an operation not a
+     * value.
+     */
+    private String param2 = null;
+
+    /** Function to calculate the result of the monkey, if an operation is given. */
+    private final BiFunction<Long, Long, Long> function;
+
+    /**
+     * Reversed function to get the first parameter value, if the result and param2
+     * is given.
+     */
+    private final BiFunction<Long, Long, Long> revFunctionGet1;
+
+    /**
+     * Reversed function to get the first parameter value, if the result and param1
+     * is given.
+     */
+    private final BiFunction<Long, Long, Long> revFunctionGet2;
+
+    /**
+     * Creates a monkey
+     *
+     * @param name
+     * @param inOperation
+     */
+    private Monkey(final String name, final String inOperation) {
       this.name = name;
       if (inOperation.contains("+")) {
         this.function = (a, b) -> a + b;
         this.revFunctionGet1 = (a, b) -> a - b;
         this.revFunctionGet2 = (a, b) -> a - b;
         final String[] splittedOp = inOperation.split("[+]");
-        this.in1 = splittedOp[0].strip();
-        this.in2 = splittedOp[1].strip();
+        this.param1 = splittedOp[0].strip();
+        this.param2 = splittedOp[1].strip();
       } else if (inOperation.contains("-")) {
         this.function = (a, b) -> a - b;
         this.revFunctionGet1 = (a, b) -> a + b;
         this.revFunctionGet2 = (a, b) -> b - a;
         final String[] splittedOp = inOperation.split("[-]");
-        this.in1 = splittedOp[0].strip();
-        this.in2 = splittedOp[1].strip();
+        this.param1 = splittedOp[0].strip();
+        this.param2 = splittedOp[1].strip();
       } else if (inOperation.contains("*")) {
         this.function = (a, b) -> a * b;
         this.revFunctionGet1 = (a, b) -> a / b;
         this.revFunctionGet2 = (a, b) -> a / b;
         final String[] splittedOp = inOperation.split("[*]");
-        this.in1 = splittedOp[0].strip();
-        this.in2 = splittedOp[1].strip();
+        this.param1 = splittedOp[0].strip();
+        this.param2 = splittedOp[1].strip();
       } else if (inOperation.contains("/")) {
         this.function = (a, b) -> a / b;
         this.revFunctionGet1 = (a, b) -> a * b;
         this.revFunctionGet2 = (a, b) -> b / a;
         final String[] splittedOp = inOperation.split("[/]");
-        this.in1 = splittedOp[0].strip();
-        this.in2 = splittedOp[1].strip();
+        this.param1 = splittedOp[0].strip();
+        this.param2 = splittedOp[1].strip();
       } else {
         this.result = Long.parseLong(inOperation.strip());
         this.hasResult = true;
+        this.function = null;
+        this.revFunctionGet1 = null;
+        this.revFunctionGet2 = null;
       }
     }
 
-    void tryToCalculate() {
-      // for part 2 only
-      if ("humn".equals(this.name)) {
-        return;
+    private void tryToCalculate(final boolean isPart1) {
+      // for part 2 only, do not calculate things from human
+      if (!isPart1) {
+        if ("humn".equals(this.name)) {
+          return;
+        }
       }
 
-
-      if (this.hasResult) {
-        // nothing to do
-      } else {
-        final Monkey in1M = monkeys.get(this.in1);
+      if (!this.hasResult) {
+        // if has no result, try to calculate it
+        final Monkey in1M = monkeys.get(this.param1);
         if (in1M == null || !in1M.hasResult) {
-          if (!dependentOn.containsKey(this.in1)) {
-            dependentOn.put(this.in1, new ArrayList<>());
+          // if cannot calculate because waiting for param1, add to dependent list
+          if (!dependentOn.containsKey(this.param1)) {
+            dependentOn.put(this.param1, new ArrayList<>());
           }
-          dependentOn.get(this.in1).add(this.name);
+          dependentOn.get(this.param1).add(this.name);
         }
-        final Monkey in2M = monkeys.get(this.in2);
+        final Monkey in2M = monkeys.get(this.param2);
         if (in2M == null || !in2M.hasResult) {
-          if (!dependentOn.containsKey(this.in2)) {
-            dependentOn.put(this.in2, new ArrayList<>());
+          // if cannot calculate because waiting for param2, add to dependent list
+          if (!dependentOn.containsKey(this.param2)) {
+            dependentOn.put(this.param2, new ArrayList<>());
           }
-          dependentOn.get(this.in2).add(this.name);
+          dependentOn.get(this.param2).add(this.name);
         }
+
         if (in1M != null && in1M.hasResult && in2M != null && in2M.hasResult) {
+          // if can calculate, calculate it
           this.result = this.function.apply(in1M.result, in2M.result);
           this.hasResult = true;
         }
@@ -92,27 +145,35 @@ public class Sol21 {
       }
 
       if (this.hasResult) {
+        // if has result, try to calculate all which was dpeendent on this value
         if (dependentOn.containsKey(this.name)) {
           dependentOn.get(this.name)
-              .forEach(mName -> monkeys.get(mName).tryToCalculate());
+              .forEach(mName -> monkeys.get(mName).tryToCalculate(isPart1));
           dependentOn.remove(this.name);
         }
       }
     }
 
-    void tryToRevCalculate() {
-      if (this.in1 == null && this.in2 == null) {
+    /**
+     * Calculates parameters in a reversed order. this.value is already assigned,
+     * wants to calculate parmeters.
+     */
+    private void tryToRevCalculate() {
+      if (this.param1 == null && this.param2 == null) {
+        // of params are not provided, then has a value, done.
         return;
       }
-      final Monkey in1M = monkeys.get(this.in1);
-      final Monkey in2M = monkeys.get(this.in2);
 
-      System.out.println(this.in1);
-      System.out.println(in1M);
+      // get param monkeys
+      final Monkey in1M = monkeys.get(this.param1);
+      final Monkey in2M = monkeys.get(this.param2);
+
       if (in1M.result == null && in2M.result != null) {
+        // if only param1 is missing, calculate it
         in1M.result = this.revFunctionGet1.apply(this.result, in2M.result);
         in1M.tryToRevCalculate();
       } else if (in2M.result == null && in1M.result != null) {
+        // if only param2 is missing
         in2M.result = this.revFunctionGet2.apply(this.result, in1M.result);
         in2M.tryToRevCalculate();
       }
@@ -138,25 +199,48 @@ public class Sol21 {
       final String[] splL = l.split(":");
 
       final Monkey m = new Monkey(splL[0], splL[1]);
-      if (m.name.equals("humn")) {
-        System.out.println(m.result);
+      monkeys.put(m.name, m);
+      m.tryToCalculate(true);
+    });
+
+    final long rootVal = monkeys.get("root").result;
+    System.out.println("Solution for Part 1: " + rootVal);
+
+    // reset
+    monkeys.clear();
+
+    // part 2
+    lines.forEach(l -> {
+      final String[] splL = l.split(":");
+
+      final Monkey m = new Monkey(splL[0], splL[1]);
+      if ("humn".equals(m.name)) {
+        // assign empty to humn value
         m.result = null;
         m.hasResult = false;
       }
       monkeys.put(m.name, m);
-      m.tryToCalculate();
+      // calculate all. It does not calculate values which are dependent on humn in
+      // any way
+      m.tryToCalculate(false);
     });
-    System.out.println(monkeys.get("humn").result);
-    System.out.println(monkeys.get("root").result);
 
-    monkeys.get("ztbt").result = monkeys.get("jzqh").result;
-    monkeys.get("ztbt").tryToRevCalculate();
+    // assumption: one of the values in root was calculated
 
-    System.out.println(monkeys.get("humn").result);
+    final Monkey rootParam1 = monkeys.get(monkeys.get("root").param1);
+    final Monkey rootParam2 = monkeys.get(monkeys.get("root").param2);
 
-    // System.out.println(monkeys.get("humn").result);
+    // root params should be equal, so make them equal. Then calculate all backwards
+    if (rootParam1.hasResult) {
+      rootParam2.result = rootParam1.result;
+      rootParam2.tryToRevCalculate();
+    } else if (rootParam2.hasResult) {
+      rootParam1.result = rootParam2.result;
+      rootParam1.tryToRevCalculate();
+    }
 
-    // humn = -3887609740495
+    final long humnVal = monkeys.get("humn").result;
+    System.out.println("Solution for part 2: " + humnVal);
   }
 
 }
