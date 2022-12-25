@@ -33,45 +33,11 @@ public class Sol17 {
   private static Map<Long, Status> previousOccupations = new HashMap<>();
 
   /**
-   * Class to represent the status of the chamber at a given state
-   */
-  private static class Status {
-
-    /** Occupation list */
-    List<Set<Integer>> occupation;
-
-    /** Form id that was lastly droppped */
-    int lastForm;
-
-    /** Number of removed items from current occupation list */
-    long removed;
-
-    /** After which step this status arised */
-    long afterStep;
-
-    /**
-     * Creates status instance from parameters
-     *
-     * @param occupation
-     * @param lastForm
-     * @param removed
-     * @param afterStep
-     */
-    Status(final List<Set<Integer>> occupation, final int lastForm,
-        final long removed, final long afterStep) {
-      this.occupation = occupation;
-      this.lastForm = lastForm;
-      this.removed = removed;
-      this.afterStep = afterStep;
-    }
-  }
-
-  /**
    * Represents a rock. <br>
    * We store the rock in a 4x4 array, where [0][0] is the bottom left point of the
    * rock.
    */
-  static class Rock {
+  private static class Rock {
 
     /** Rock elems. '#' for rock and '.' for empty. */
     private final char[][] rock = new char[4][4];
@@ -83,7 +49,7 @@ public class Sol17 {
     private long y;
 
     /** Real width of rock */
-    private int width;
+    private final int width;
 
     /**
      * Creates a rock based on the parameter
@@ -127,6 +93,8 @@ public class Sol17 {
           this.rock[3] = "....".toCharArray();
           this.width = 2;
           break;
+        default:
+          throw new RuntimeException("Invalid modulus.");
       }
     }
 
@@ -135,7 +103,7 @@ public class Sol17 {
      *
      * @return
      */
-    boolean collides() {
+    private boolean collides() {
       if (this.x < 0 || this.x + this.width > CHAMBER_WIDTH || this.y < removed) {
         // collides with chamber wall
         return true;
@@ -162,7 +130,7 @@ public class Sol17 {
     /**
      * Settles rock at current coordiante
      */
-    void settle() {
+    private void settle() {
       for (int rockY = 0; rockY < 4; rockY++) {
         for (int rockX = 0; rockX < 4; rockX++) {
           if (this.rock[rockY][rockX] == '#') {
@@ -189,7 +157,7 @@ public class Sol17 {
      * @param time Time when rock appears
      * @return Time after the rock is settled
      */
-    long simulate(long time) {
+    private long simulate(long time) {
       // default coordinates
       this.x = 2;
       this.y = getOccupiedHeight() + 3;
@@ -229,6 +197,40 @@ public class Sol17 {
 
   }
 
+  /**
+   * Class to represent the status of the chamber at a given state
+   */
+  private static class Status {
+
+    /** Occupation list */
+    private final List<Set<Integer>> occupation;
+
+    /** Form id that was lastly droppped */
+    private final int lastForm;
+
+    /** Number of removed items from current occupation list */
+    private final long removed;
+
+    /** After which step this status arised */
+    private final long afterStep;
+
+    /**
+     * Creates status instance from parameters
+     *
+     * @param occupation
+     * @param lastForm
+     * @param removed
+     * @param afterStep
+     */
+    private Status(final List<Set<Integer>> occupation, final int lastForm,
+        final long removed, final long afterStep) {
+      this.occupation = occupation;
+      this.lastForm = lastForm;
+      this.removed = removed;
+      this.afterStep = afterStep;
+    }
+  }
+
   public static void main(final String[] args) {
     // read input
     try (BufferedReader buffR =
@@ -241,7 +243,7 @@ public class Sol17 {
     final long p1 = simulateThrowingOf(2022);
     System.out.println("Solution for Part 1: " + p1);
 
-    final long p2 = simulateThrowingOf(1000000000000L);
+    final long p2 = simulateThrowingOf(1_000_000_000_000L);
     System.out.println("Solution for Part 2: " + p2);
 
   }
@@ -267,6 +269,46 @@ public class Sol17 {
       removed += clearLines;
       LongStream.range(0, clearLines).forEach(l -> occupation.remove(0));
     }
+  }
+
+  /**
+   * Gets current jet value for given time
+   *
+   * @param time
+   * @return
+   */
+  private static char getJet(final long time) {
+    return jets[(int) (time % jets.length)];
+  }
+
+  /**
+   * Gets occupation for given row
+   *
+   * @param y
+   * @return
+   */
+  private static Set<Integer> getOccupations(final long y) {
+    return occupation.get((int) (y - removed));
+  }
+
+  /**
+   * Gets overall number of occupied rows
+   *
+   * @return
+   */
+  private static long getOccupiedHeight() {
+    return removed + occupation.size();
+  }
+
+  /**
+   * Simulates the falling of a single rock
+   *
+   * @param simulationNumber
+   * @param time
+   * @return
+   */
+  private static long simulate(final int simulationNumber, final long time) {
+    return new Rock(simulationNumber).simulate(time);
   }
 
   /**
@@ -329,7 +371,7 @@ public class Sol17 {
 
     // increase numbers until the last repeating moment
     final long stepInc = foundSameSecond - foundSameFirst;
-    final long timesToDo = ((number - foundSameSecond) / stepInc);
+    final long timesToDo = (number - foundSameSecond) / stepInc;
     removed += timesToDo * heightInc;
 
     // simulate the rest of the steps
@@ -338,46 +380,6 @@ public class Sol17 {
     }
 
     return getOccupiedHeight();
-  }
-
-  /**
-   * Gets current jet value for given time
-   *
-   * @param time
-   * @return
-   */
-  static char getJet(final long time) {
-    return jets[(int) (time % jets.length)];
-  }
-
-  /**
-   * Gets occupation for given row
-   *
-   * @param y
-   * @return
-   */
-  static Set<Integer> getOccupations(final long y) {
-    return occupation.get((int) (y - removed));
-  }
-
-  /**
-   * Gets overall number of occupied rows
-   *
-   * @return
-   */
-  static long getOccupiedHeight() {
-    return removed + occupation.size();
-  }
-
-  /**
-   * Simulates the falling of a single rock
-   *
-   * @param simulationNumber
-   * @param time
-   * @return
-   */
-  static long simulate(final int simulationNumber, final long time) {
-    return new Rock(simulationNumber).simulate(time);
   }
 
 }
