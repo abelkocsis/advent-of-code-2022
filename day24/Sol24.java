@@ -13,51 +13,51 @@ import java.util.Set;
 public class Sol24 {
 
   /** Width of map including walls */
-  static int width = 122; // 122;
+  private static final int WIDTH = 122; // 122;
 
   /** Height of map including walls */
-  static int height = 27;
+  private static final int HEIGHT = 27;
 
   /** Map */
-  static char[][] map = new char[height][width];
+  private static char[][] map = new char[HEIGHT][WIDTH];
 
   /** Lines of map with some additional information */
-  static List<Line> lines = new ArrayList<>();
+  private static List<Line> lines = new ArrayList<>();
 
   /** List of all Blizzards */
-  static List<Blizzard> blizzards = new ArrayList<>();
+  private static List<Blizzard> blizzards = new ArrayList<>();
 
   /**
-   * Maximum time to simulate the movement of blizzards, after wich the overall
-   * movement repeats itself. In general, it's the LCM of width and height (exclduing
+   * Maximum time to simulate the movement of blizzards, after which the overall
+   * movement repeats itself. In general, it's the LCM of width and height (excluding
    * the walls).
    */
-  static int maxTimeToSimulate = 600;
+  private static final int REPEATS_AFTER = 600;
 
   /** Minimum distance the goal can be reached */
-  static int minValue = Integer.MAX_VALUE;
+  private static int minValue = Integer.MAX_VALUE;
 
   /**
    * Maximum value we expect the operation to succeed. It's a rough estimation in
    * order to make the simulation faster.
    */
-  static int absMaxValue = 1506;
+  private static final int ABS_MAX_VALUE = 1506;
 
   /**
    * Blizzard
    */
   private static class Blizzard {
     /** Current position, x coordinate */
-    int x;
+    private int x;
 
     /** Current position, y coordinate */
-    int y;
+    private int y;
 
     /** The movement of the Blizzard towards x direction (-1, 0, or 1) */
-    int moveX;
+    private final int moveX;
 
     /** The movement of the Blizzard towards x direction (-1, 0, or 1) */
-    int moveY;
+    private final int moveY;
 
     /**
      * Creates a Blizzard
@@ -66,7 +66,7 @@ public class Sol24 {
      * @param y Starting coordinate, y value
      * @param chr Character which represents the movement
      */
-    Blizzard(final int x, final int y, final char chr) {
+    /* default */ Blizzard(final int x, final int y, final char chr) {
       this.x = x;
       this.y = y;
       switch (chr) {
@@ -103,7 +103,7 @@ public class Sol24 {
      *
      * @param time Current time
      */
-    void step(final int time) {
+    /* default */void step(final int time) {
       final int nextX = this.x + this.moveX;
       final int nextY = this.y + this.moveY;
       final boolean changeX = this.x != nextX;
@@ -114,14 +114,14 @@ public class Sol24 {
           if (nextX > this.x) {
             this.x = 1;
           } else {
-            this.x = width - 2;
+            this.x = WIDTH - 2;
           }
         } else {
           this.x = nextX;
           if (nextY > this.y) {
             this.y = 1;
           } else {
-            this.y = height - 2;
+            this.y = HEIGHT - 2;
           }
         }
       } else {
@@ -140,10 +140,10 @@ public class Sol24 {
   private static class Line {
     /**
      * Assigns to every time integer a set of positions which are occupied at the
-     * given time by blizzards. time can be at most minValue as after that, the whole
-     * map repeats
+     * given time by blizzards. time can be at most REPEATS_AFTER as after that, the
+     * whole map repeats
      */
-    Map<Integer, Set<Integer>> occupiedAtTime = new HashMap<>();
+    /* default */Map<Integer, Set<Integer>> occupiedAtTime = new HashMap<>();
 
     /**
      * Assigns to every time integer a set of positions, where we have already tried
@@ -151,13 +151,13 @@ public class Sol24 {
      * from trying to build the same path if we have been there at an earlier time
      * but with the same map state.
      */
-    Map<Integer, Set<Integer>> hasBeenHereAtTime = new HashMap<>();
+    /* default */Map<Integer, Set<Integer>> hasBeenHereAtTime = new HashMap<>();
 
     /**
      * Creates and initialises a line
      */
-    Line() {
-      for (int i = 0; i < maxTimeToSimulate + 1; i++) {
+    /* default */ Line() {
+      for (int i = 0; i < REPEATS_AFTER + 1; i++) {
         this.occupiedAtTime.put(i, new HashSet<>());
         this.hasBeenHereAtTime.put(i, new HashSet<>());
       }
@@ -169,7 +169,7 @@ public class Sol24 {
     String[] splittedLine;
 
     // read input
-    try (final BufferedReader buffR =
+    try (BufferedReader buffR =
         Files.newBufferedReader(Paths.get("in24.txt"), StandardCharsets.UTF_8)) {
 
       int y = 0;
@@ -194,7 +194,7 @@ public class Sol24 {
       }
 
       // simulate the movement of Blizzards
-      for (int i = 1; i < maxTimeToSimulate + 1; i++) {
+      for (int i = 1; i < REPEATS_AFTER + 1; i++) {
         simulateBlizzs(i);
       }
 
@@ -209,7 +209,7 @@ public class Sol24 {
       });
 
       // go back
-      final int reachingBackTime = simulateSteps(width - 2, height - 1, p1, false);
+      final int reachingBackTime = simulateSteps(WIDTH - 2, HEIGHT - 1, p1, false);
 
       // reset again
       minValue = Integer.MAX_VALUE;
@@ -229,7 +229,7 @@ public class Sol24 {
    *
    * @param time
    */
-  static void simulateBlizzs(final int time) {
+  private static void simulateBlizzs(final int time) {
     blizzards.forEach(b -> b.step(time));
   }
 
@@ -243,19 +243,19 @@ public class Sol24 {
    *        down to top
    * @return Smallest possible steps to reach the goal
    */
-  static int simulateSteps(final int x, final int y, final int time,
+  private static int simulateSteps(final int x, final int y, final int time,
       final boolean isGoalDown) {
 
     // if any of these conditions met, we don't care about the result. Return max
     // value
-    if ((y < 0) || y >= height || (time >= minValue) || time > absMaxValue
-        || (map[y][x] == '#')
-        || lines.get(y).occupiedAtTime.get(time % maxTimeToSimulate).contains(x)) {
+    if (y < 0 || y >= HEIGHT || time >= minValue || time > ABS_MAX_VALUE
+        || map[y][x] == '#'
+        || lines.get(y).occupiedAtTime.get(time % REPEATS_AFTER).contains(x)) {
       return Integer.MAX_VALUE;
     }
 
     // if we found the goal, return the current time as a result
-    if ((isGoalDown ? y == height - 1 : y == 0)) {
+    if (isGoalDown ? y == HEIGHT - 1 : y == 0) {
       if (time < minValue) {
         minValue = time;
         return time;
@@ -266,9 +266,9 @@ public class Sol24 {
     // if we have been here at any (t - maxTimeToSimulate * k) time, the positions of
     // the blizzards were exactly the same, but we would have resulted in a small
     // value. thus, kill this fork of the simulation
-    for (int t = time; t >= 0; t -= maxTimeToSimulate) {
-      if ((lines.get(y).hasBeenHereAtTime.containsKey(t)
-          && lines.get(y).hasBeenHereAtTime.get(t).contains(x))) {
+    for (int t = time; t >= 0; t -= REPEATS_AFTER) {
+      if (lines.get(y).hasBeenHereAtTime.containsKey(t)
+          && lines.get(y).hasBeenHereAtTime.get(t).contains(x)) {
         return Integer.MAX_VALUE;
       }
     }
@@ -287,8 +287,6 @@ public class Sol24 {
     final int val5 = simulateSteps(x, y, time + 1, isGoalDown);
 
     // return the minimum of them
-    final int min =
-        Math.min(Math.min(val1, val2), Math.min(val3, Math.min(val4, val5)));
-    return min;
+    return Math.min(Math.min(val1, val2), Math.min(val3, Math.min(val4, val5)));
   }
 }
