@@ -8,10 +8,9 @@ public class Sol25 {
 
   public static void main(final String[] args) throws IOException {
     String line;
-    final String[] splittedLine;
 
     // read input
-    try (final BufferedReader buffR =
+    try (BufferedReader buffR =
         Files.newBufferedReader(Paths.get("in25.txt"), StandardCharsets.UTF_8)) {
 
       long sum = 0;
@@ -25,6 +24,12 @@ public class Sol25 {
 
   }
 
+  /**
+   * Converts SNAFU string to long
+   *
+   * @param snafu SNAFU number as string
+   * @return Long value
+   */
   private static long fromSNAFU(final String snafu) {
     final StringBuilder sb = new StringBuilder(snafu);
     final char[] snafuRev = sb.reverse().toString().toCharArray();
@@ -38,6 +43,12 @@ public class Sol25 {
     return result;
   }
 
+  /**
+   * Converts SNAFU single character to value
+   *
+   * @param e Single SNAFU character
+   * @return Value of character
+   */
   private static long getDigVal(final char e) {
     switch (e) {
       case '2':
@@ -56,6 +67,12 @@ public class Sol25 {
     }
   }
 
+  /**
+   * Converts long value to SNAFU string
+   *
+   * @param value Long value
+   * @return SNAFU string
+   */
   private static String toSNAFU(long value) {
 
     final StringBuilder sb = new StringBuilder();
@@ -83,6 +100,8 @@ public class Sol25 {
           sb.append('-');
           value += 1;
           break;
+        default:
+          throw new RuntimeException("Invalid mod value");
       }
       value /= 5;
     }
