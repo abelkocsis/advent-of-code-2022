@@ -49,7 +49,7 @@ public class Sol16 {
      * @param name
      * @param line
      */
-    Valve(final String name, final String line) {
+    private Valve(final String name, final String line) {
       this.name = name;
       String[] splittedString;
       if (line.contains(",")) {
@@ -79,7 +79,7 @@ public class Sol16 {
      * @param from
      * @param distance
      */
-    void calculateDistFrom(final String from, final int distance) {
+    private void calculateDistFrom(final String from, final int distance) {
       if (distances.get(from).get(this.name) > distance) {
         distances.get(from).put(this.name, distance);
         this.tunnelsTo.stream().forEach(
@@ -90,12 +90,11 @@ public class Sol16 {
 
   public static void main(final String[] args) {
     String line;
-    final int i = 0;
     // read input
     try (BufferedReader buffR =
         Files.newBufferedReader(Paths.get("in16.txt"), StandardCharsets.UTF_8)) {
       while ((line = buffR.readLine()) != null) {
-        parseLine(line, i);
+        parseLine(line);
       }
     } catch (final IOException e) {
       System.out.println("IOException in try block =>" + e.getMessage());
@@ -138,9 +137,8 @@ public class Sol16 {
    * Parses a line, saves valve to VALVE map
    *
    * @param line
-   * @param i
    */
-  private static void parseLine(final String line, final int i) {
+  private static void parseLine(final String line) {
     final String valveName =
         line.substring("Valve ".length(), "Valve ".length() + 2);
     VALVES.put(valveName,
@@ -216,14 +214,15 @@ public class Sol16 {
    * @param releasedPres
    * @return Maximum number of water could be released
    */
-  static int simulatePart2(final String currVal1Name, final String currval2Name,
-      final int mins1, final int mins2, final int releasedPres) {
+  private static int simulatePart2(final String currVal1Name,
+      final String currval2Name, final int mins1, final int mins2,
+      final int releasedPres) {
 
     // note that it could be the case that one of them has finished.
     final boolean p1Running = mins1 < ALL_MINS;
     final boolean p2Running = mins2 < ALL_MINS;
 
-    if ((!p1Running && !p2Running) || openedValves.size() == VALVES.size()) {
+    if (!p1Running && !p2Running || openedValves.size() == VALVES.size()) {
       // if both finished or all valves are open, return value
       return releasedPres;
     }
