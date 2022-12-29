@@ -29,7 +29,7 @@ public class Sol3 {
             Arrays.asList(line.substring(0, partLen).split("")).stream()
                 // filter for characters which are present in second part
                 .filter(chr -> secondPart.contains(chr))
-                // thers should be exactly one, so just get nay duplicates
+                // there should be exactly one, so just get nay duplicates
                 .findAny().get();
 
         // get priority for common character
