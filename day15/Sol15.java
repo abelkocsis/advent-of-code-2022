@@ -9,22 +9,48 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 
 public class Sol15 {
-  final static List<Sensor> sensors = new ArrayList<>();
 
-  static int maxDist = Integer.MIN_VALUE;
-  static int minX = Integer.MAX_VALUE;
-  static int maxX = Integer.MIN_VALUE;
+  /** List of all sensors */
+  private static final List<Sensor> sensors = new ArrayList<>();
 
+  /** Maximum distance between a sensor and the closest beacon */
+  private static int maxDist = Integer.MIN_VALUE;
+
+  /** Smallest possible X coordinate value */
+  private static int minX = Integer.MAX_VALUE;
+
+  /** Largest possible X coordinate value */
+  private static int maxX = Integer.MIN_VALUE;
+
+  /**
+   * Class to represent a coordinate
+   */
   public static class Coord extends Object {
-    int x;
-    int y;
 
-    Coord(final int x, final int y) {
+    /** X coordinate */
+    private final int x;
+
+    /** Y coordinate */
+    private final int y;
+
+    /**
+     *
+     * @param x
+     * @param y
+     */
+    private Coord(final int x, final int y) {
+      super();
       this.x = x;
       this.y = y;
     }
 
-    Coord(final String cords) {
+    /**
+     * Parses an input line to coordinate instance
+     *
+     * @param cords
+     */
+    private Coord(final String cords) {
+      super();
       final String[] splittedCords = cords.split(", ");
 
       this.x = Integer.parseInt(splittedCords[0].substring("x=".length()).strip());
@@ -32,20 +58,15 @@ public class Sol15 {
     }
 
     @Override
-    public boolean equals(final Object o) {
-
-      // self check
-      if (this == o) {
+    public boolean equals(final Object obj) {
+      if (this == obj) {
         return true;
       }
-      // null check
-      // type check and cast
-      if ((o == null) || (this.getClass() != o.getClass())) {
+      if (obj == null || this.getClass() != obj.getClass()) {
         return false;
       }
-      final Coord coord = (Coord) o;
-      // field comparison
-      return this.x == coord.x && this.y == coord.y;
+      final Coord coordObj = (Coord) obj;
+      return this.x == coordObj.x && this.y == coordObj.y;
     }
 
     @Override
@@ -53,17 +74,37 @@ public class Sol15 {
       return Objects.hash(this.x, this.y);
     }
 
-    int distance(final Coord b) {
+    /**
+     * Returns the Manhattan distance between coordinates
+     *
+     * @param b
+     * @return
+     */
+    private int distance(final Coord b) {
       return Math.abs(this.x - b.x) + Math.abs(this.y - b.y);
     }
   }
 
+  /**
+   * Representation of a sensor
+   */
   private static class Sensor {
-    Coord coordinate;
-    Coord beaconCoord;
-    int distance;
 
-    Sensor(final String line) {
+    /** Coordiante of the sensor */
+    private final Coord coordinate;
+
+    /** Position of the closest beacon */
+    private final Coord beaconCoord;
+
+    /** Distance between sensor and closest beacon */
+    private final int beaconDistance;
+
+    /**
+     * Parses a line into a sensor instance
+     *
+     * @param line
+     */
+    private Sensor(final String line) {
       final String[] splittedLine =
           line.substring("Sensor at ".length()).split(": closest beacon is at ");
       this.coordinate = new Coord(splittedLine[0]);
@@ -77,19 +118,17 @@ public class Sol15 {
 
       this.beaconCoord = new Coord(splittedLine[1]);
 
-      this.distance = this.coordinate.distance(this.beaconCoord);
+      this.beaconDistance = this.coordinate.distance(this.beaconCoord);
 
-      if (this.distance > maxDist) {
-        maxDist = this.distance;
+      if (this.beaconDistance > maxDist) {
+        maxDist = this.beaconDistance;
       }
     }
   }
 
 
   public static void main(final String[] args) {
-    // Initialise variables
-
-    String line; // to parse input
+    String line;
 
     // read input
     try (BufferedReader buffR =
@@ -100,54 +139,81 @@ public class Sol15 {
     } catch (final IOException e) {
       System.out.println("IOException in try block =>" + e.getMessage());
     }
-    // System.out.println(getRowCount(2000000));
 
+    // part 1
+    final long p1Result = getRowCount(2_000_000);
+    System.out.println("Solution for Part 1: " + p1Result);
+
+    // part 2
     int distressX = -1;
     int distressY = -1;
-    for (int i = 0; i <= 4000000; i++) {
-      final int emptyPosition = getEmptyX(i);
-      if (emptyPosition != -1) {
-        distressY = i;
-        distressX = emptyPosition;
-        System.out.println(getEmptyX(i) + ", " + i);
+    for (int y = 0; y <= 4_000_000; y++) {
+      // 0 <= y <= 4 000 000 according to the description
+      distressX = getEmptyX(y);
+      if (distressX != -1) {
+        // if distress position found, stop the finding
+        distressY = y;
         break;
       }
     }
-
-    System.out.println((long) distressX * 4000000 + distressY);
+    final long p2Result = (long) distressX * 4_000_000 + distressY;
+    System.out.println("Solution for Part 2: " + p2Result);
 
   }
 
-  static int getEmptyX(final int y) {
-    for (int x = 0; x <= 4000000; x++) {
+  /**
+   * Gets the X coordinate of the position where the distress beacon could be in the
+   * given row
+   *
+   * @param y Y coordinate of row to examine
+   * @return X coordinate where distress beacon could be. If distress beacon cannot
+   *         be in current row, returns -1
+   */
+  private static int getEmptyX(final int y) {
+    // 0 <= x <= 4 000 000 according to the description
+    for (int x = 0; x <= 4_000_000; x++) {
+
+      // current coordinate
       final Coord coord = new Coord(x, y);
 
-      Sensor coveredBy;
+      // we call a coordinate covered by a sensor, if the closest beacon to the
+      // sensor is at most as close to the sensor as the currently examined position
+      Sensor coveredBy; // sensor that covers the current coordinate
       try {
         coveredBy = sensors.stream()
-            .filter(sensor -> coord.distance(sensor.coordinate) <= sensor.distance)
+            .filter(
+                sensor -> coord.distance(sensor.coordinate) <= sensor.beaconDistance)
             .findAny().get();
       } catch (final NoSuchElementException e) {
+        // if no sensor "covers" the coordinate, we found a place which could have
+        // the distress signal
         return x;
       }
 
+      // iterate x cleverly rather than 1 by 1, to speed up the finding proccess.
       if (coveredBy.coordinate.x > x) {
         x = coveredBy.coordinate.x + (coveredBy.coordinate.x - x);
       } else {
         x = coveredBy.coordinate.x
-            + (coveredBy.distance - Math.abs(coveredBy.coordinate.y - y));
+            + (coveredBy.beaconDistance - Math.abs(coveredBy.coordinate.y - y));
       }
     }
 
     return -1;
   }
 
-  static long getRowCount(final int y) {
+  /**
+   * Gets number of covered position counts in given row
+   *
+   * @param y
+   * @return
+   */
+  private static long getRowCount(final int y) {
     int counter = 0;
     for (int x = minX - maxDist; x < maxX + maxDist; x++) {
       final Coord coord = new Coord(x, y);
-      final boolean isOccupied = sensors.stream()
-          .anyMatch(sensor -> coord.distance(sensor.coordinate) <= sensor.distance);
+      final boolean isOccupied = sensors.stream().anyMatch(
+          sensor -> coord.distance(sensor.coordinate) <= sensor.beaconDistance);
       if (isOccupied) {
         counter++;
       }
